@@ -55,6 +55,27 @@ A minimalist weather application for Android built with Jetpack Compose, Kotlin 
 
 ---
 
+## Download & Installation
+
+Download the latest release APK directly from GitHub:
+👉 **[Download Latest APK](https://github.com/SpicychieF05/Aether/releases/latest)**
+
+### How to Install:
+1. Download `Aether-v1.1.0.apk` from the [Releases page](https://github.com/SpicychieF05/Aether/releases/latest).
+2. Tap the downloaded `.apk` file.
+3. If prompted, enable **"Install unknown apps"** for your browser or file manager.
+4. Tap **Install**.
+   *(Note: Google Play Protect may display an "Unrecognized app" notice for APKs installed outside the Google Play Store. This is standard behavior for sideloaded open-source releases — simply tap **More details > Install anyway**).*
+
+- **Minimum Supported Android**: Android 7.0 (Nougat, API level 24) or higher.
+- **Target Android Version**: Android 16 (API level 36).
+- **SHA-256 Checksum**:
+  ```
+  [PASTE_SHA256_CHECKSUM_HERE_AFTER_BUILD]
+  ```
+
+---
+
 ## Weather Providers
 1. **Open-Meteo**: Free, unlimited rate limits, global open numerical models.
 2. **Tomorrow.io**: Hyper-local v4 Timelines API with seamless automatic fallback to Open-Meteo upon rate limits or errors.

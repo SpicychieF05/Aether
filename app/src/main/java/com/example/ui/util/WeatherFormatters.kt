@@ -44,8 +44,9 @@ object WeatherFormatters {
     }
 
     /**
-     * Formats current time according to location coordinates and country.
-     * Uses timezone lookup based on longitude or known regions (e.g. India = IST GMT+5:30).
+     * Formats current time according to location coordinates, country and device timezone.
+     * If the location is in the same timezone as the user's device, or if offline,
+     * it directly leverages the device clock and timezone.
      */
     fun formatLocationTime(
         latitude: Double,
@@ -53,9 +54,18 @@ object WeatherFormatters {
         country: String?,
         admin1: String? = null
     ): String {
-        val tz: java.util.TimeZone = resolveTimeZone(latitude, longitude, country, admin1)
-        val sdf = java.text.SimpleDateFormat("h:mm a", Locale.US)
-        sdf.timeZone = tz
+        val deviceTz = java.util.TimeZone.getDefault()
+        val locTz: java.util.TimeZone = resolveTimeZone(latitude, longitude, country, admin1)
+
+        // Compare raw offsets: if they are in the same offset bucket, use device timezone directly
+        val targetTz = if (Math.abs(deviceTz.rawOffset - locTz.rawOffset) < 1800000) { // within 30 min
+            deviceTz
+        } else {
+            locTz
+        }
+
+        val sdf = java.text.SimpleDateFormat("h:mm a", Locale.getDefault())
+        sdf.timeZone = targetTz
         return sdf.format(java.util.Date())
     }
 

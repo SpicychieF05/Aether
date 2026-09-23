@@ -47,6 +47,7 @@ import androidx.constraintlayout.compose.Dimension
 import com.example.data.model.AetherWeatherState
 import com.example.data.repository.LocationHelper
 import com.example.ui.components.AetherTopBar
+import com.example.ui.components.AdaptiveLayoutWrapper
 import com.example.ui.components.AmbianceOverlay
 import com.example.ui.components.CurrentWeatherCard
 import com.example.ui.components.DailyForecastCard
@@ -171,33 +172,37 @@ fun AetherMainScreen(
                             onExitZen = { viewModel.toggleZenMode() }
                         )
                     } else {
-                        // Standard Forecast View
+                        // Standard Forecast View with AdaptiveLayoutWrapper
                         AnimatedVisibility(
                             visible = !uiState.isZenMode,
                             enter = fadeIn() + slideInVertically(initialOffsetY = { 80 }),
                             exit = fadeOut() + slideOutVertically(targetOffsetY = { 80 })
                         ) {
-                            if (isExpandedOrMedium) {
-                                // Multi-Pane Responsive Layout for Medium / Expanded (Foldables & Tablets >= 600dp)
-                                MultiPaneAdaptiveLayout(
-                                    weather = weather,
-                                    scrubbedHour = scrubbedHour,
-                                    uiState = uiState,
-                                    viewModel = viewModel,
-                                    onLocationClick = { showLocationSheet = true },
-                                    onSettingsClick = { showSettingsSheet = true }
-                                )
-                            } else {
-                                // Optimized Single-Column Layout for Compact Phones (e.g. Lava Blaze 5G 360-384dp)
-                                CompactPhoneLayout(
-                                    weather = weather,
-                                    scrubbedHour = scrubbedHour,
-                                    uiState = uiState,
-                                    viewModel = viewModel,
-                                    onLocationClick = { showLocationSheet = true },
-                                    onSettingsClick = { showSettingsSheet = true }
-                                )
-                            }
+                            AdaptiveLayoutWrapper(
+                                windowWidthSizeClass = windowWidthSizeClass,
+                                compactContent = {
+                                    // Optimized Single-Column Layout for Compact Phones
+                                    CompactPhoneLayout(
+                                        weather = weather,
+                                        scrubbedHour = scrubbedHour,
+                                        uiState = uiState,
+                                        viewModel = viewModel,
+                                        onLocationClick = { showLocationSheet = true },
+                                        onSettingsClick = { showSettingsSheet = true }
+                                    )
+                                },
+                                expandedContent = {
+                                    // Multi-Pane Responsive Side-by-Side Dashboard for Expanded Tablets & Desktops
+                                    MultiPaneAdaptiveLayout(
+                                        weather = weather,
+                                        scrubbedHour = scrubbedHour,
+                                        uiState = uiState,
+                                        viewModel = viewModel,
+                                        onLocationClick = { showLocationSheet = true },
+                                        onSettingsClick = { showSettingsSheet = true }
+                                    )
+                                }
+                            )
                         }
                     }
                 }

@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">Aether</string>
+    <string name="title_forecast_24h">24-HOUR FORECAST • TAP TO SCRUB</string>
+    <string name="title_7day_outlook">7-DAY OUTLOOK</string>
+    <string name="settings_title">SETTINGS</string>
+    <string name="provider_title">Weather API Provider</string>
+    <string name="provider_desc">Choose weather &amp; air quality forecast source</string>
+    <string name="unit_celsius">Celsius (°C)</string>
+    <string name="unit_fahrenheit">Fahrenheit (°F)</string>
+    <string name="thunder_haptics_title">Atmospheric Thunder Haptics</string>
+    <string name="scrubber_haptics_title">Scrubber Time Dial Haptics</string>
+    <string name="offline_cached_banner">Offline Mode • Showing cached forecast</string>
+    <string name="clear_search">Clear search</string>
+    <string name="search_placeholder">Search city, town, or region...</string>
+    <string name="use_current_location">Use Current GPS Location</string>
+    <string name="saved_places">Saved Places</string>
+    <string name="recent_searches">Recent Searches</string>
+    <string name="retry">Retry</string>
 </resources>
