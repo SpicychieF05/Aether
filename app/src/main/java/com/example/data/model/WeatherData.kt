@@ -60,12 +60,14 @@ data class DailyItem(
 )
 
 data class AqiData(
-    val isEuropeanStandard: Boolean,
+    val isEuropeanStandard: Boolean = false,
     val standardName: String,
     val currentValue: Int,
     val levelLabel: String,
     val highestPast7Days: Int,
-    val lowestPast7Days: Int
+    val lowestPast7Days: Int,
+    val isNaqiStandard: Boolean = false,
+    val providerDescription: String = ""
 )
 
 data class AetherWeatherState(

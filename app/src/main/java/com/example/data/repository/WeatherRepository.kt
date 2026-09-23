@@ -149,14 +149,37 @@ class WeatherRepository(private val database: AetherDatabase) {
         )
     }
 
-    fun isIndianLocation(latitude: Double, longitude: Double, country: String?): Boolean {
+    fun isIndianLocation(
+        latitude: Double,
+        longitude: Double,
+        country: String? = null,
+        admin1: String? = null
+    ): Boolean {
         if (country != null) {
             val c = country.lowercase().trim()
             if (c == "india" || c == "in" || c.contains("india")) {
                 return true
             }
         }
-        return latitude in 6.5..37.5 && longitude in 68.0..97.5
+        if (admin1 != null) {
+            val a = admin1.lowercase().trim()
+            val indianStates = setOf(
+                "west bengal", "delhi", "national capital territory of delhi",
+                "maharashtra", "karnataka", "tamil nadu", "gujarat", "rajasthan",
+                "uttar pradesh", "telangana", "kerala", "punjab", "haryana",
+                "bihar", "odisha", "orissa", "assam", "goa", "himachal pradesh",
+                "uttarakhand", "jharkhand", "chhattisgarh", "madhya pradesh",
+                "jammu and kashmir", "jammu & kashmir", "ladakh", "andhra pradesh",
+                "chandigarh", "puducherry", "pondicherry", "tripura", "meghalaya",
+                "manipur", "nagaland", "mizoram", "sikkim", "arunachal pradesh",
+                "andaman and nicobar islands", "dadra and nagar haveli and daman and diu",
+                "lakshadweep"
+            )
+            if (indianStates.contains(a)) {
+                return true
+            }
+        }
+        return latitude in 6.0..37.6 && longitude in 68.0..97.6
     }
 
     private fun isEuropeanLocation(latitude: Double, longitude: Double, country: String?): Boolean {
@@ -289,7 +312,12 @@ class WeatherRepository(private val database: AetherDatabase) {
         }
 
         // AQI (Indian NAQI, European AQI, or US AQI based on geographic origin)
-        val isIndia = isIndianLocation(location.latitude, location.longitude, location.country)
+        val isIndia = isIndianLocation(
+            latitude = location.latitude,
+            longitude = location.longitude,
+            country = location.country,
+            admin1 = location.admin1
+        )
         val isEurope = !isIndia && isEuropeanLocation(location.latitude, location.longitude, location.country)
 
         val aqiData = if (airQuality != null) {
@@ -298,9 +326,11 @@ class WeatherRepository(private val database: AetherDatabase) {
             val levelLabel: String
             val high: Int
             val low: Int
+            val isNaqi: Boolean
 
             if (isIndia) {
-                standardName = NaqiCalculator.STANDARD_NAME
+                isNaqi = true
+                standardName = "NAQI"
                 currentVal = NaqiCalculator.calculateNaqi(
                     pm25 = airQuality.current?.pm25,
                     pm10 = airQuality.current?.pm10,
@@ -326,6 +356,7 @@ class WeatherRepository(private val database: AetherDatabase) {
                 high = if (hourlyNaqiList.isNotEmpty()) hourlyNaqiList.maxOrNull() ?: currentVal else currentVal
                 low = if (hourlyNaqiList.isNotEmpty()) hourlyNaqiList.minOrNull() ?: currentVal else currentVal
             } else if (isEurope) {
+                isNaqi = false
                 standardName = "European AQI"
                 currentVal = airQuality.current?.europeanAqi ?: 25
                 val hourlyVals = airQuality.hourly?.europeanAqi?.filterNotNull() ?: emptyList()
@@ -339,6 +370,7 @@ class WeatherRepository(private val database: AetherDatabase) {
                     else -> "Very Poor"
                 }
             } else {
+                isNaqi = false
                 standardName = "US AQI"
                 currentVal = airQuality.current?.usAqi ?: 55
                 val hourlyVals = airQuality.hourly?.usAqi?.filterNotNull() ?: emptyList()
@@ -360,7 +392,9 @@ class WeatherRepository(private val database: AetherDatabase) {
                 currentValue = currentVal,
                 levelLabel = levelLabel,
                 highestPast7Days = high,
-                lowestPast7Days = low
+                lowestPast7Days = low,
+                isNaqiStandard = isNaqi,
+                providerDescription = if (isNaqi) "CPCB National AQI (NAQI) Standard" else standardName
             )
         } else null
 

@@ -356,12 +356,25 @@ fun LocationBottomSheet(
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
-                                Text(
-                                    text = curLoc.terrainCategory.shortLabel,
-                                    color = Color(0xFFFFD54F),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = curLoc.terrainCategory.shortLabel,
+                                        color = Color(0xFFFFD54F),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    val isCurIndia = curLoc.country?.equals("India", ignoreCase = true) == true ||
+                                            (curLoc.latitude in 6.0..37.6 && curLoc.longitude in 68.0..97.6)
+                                    if (isCurIndia) {
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "• NAQI",
+                                            color = Color(0xFFAED581),
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -396,18 +409,43 @@ private fun LocationResultItem(location: LocationItem, onSelect: () -> Unit) {
             }
         }
 
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.12f))
-                .padding(horizontal = 8.dp, vertical = 3.dp)
+        val isResIndia = (location.country?.equals("India", ignoreCase = true) == true) ||
+                (location.country?.equals("IN", ignoreCase = true) == true) ||
+                (location.latitude in 6.0..37.6 && location.longitude in 68.0..97.6)
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = location.terrainCategory.shortLabel,
-                color = Color(0xFFFFE082),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
-            )
+            if (isResIndia) {
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color(0xFF81C784).copy(alpha = 0.2f))
+                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "NAQI",
+                        color = Color(0xFFAED581),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.12f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = location.terrainCategory.shortLabel,
+                    color = Color(0xFFFFE082),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

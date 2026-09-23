@@ -57,15 +57,27 @@ class ExampleRobolectricTest {
         val weatherRepo = WeatherRepository(database)
 
         // Kolkata (in India)
-        assertTrue(weatherRepo.isIndianLocation(22.57, 88.36, "India"))
+        assertTrue(weatherRepo.isIndianLocation(22.57, 88.36, "India", "West Bengal"))
         // New Delhi (coordinates in India)
-        assertTrue(weatherRepo.isIndianLocation(28.61, 77.20, null))
+        assertTrue(weatherRepo.isIndianLocation(28.61, 77.20, null, null))
+        // Mumbai coordinates
+        assertTrue(weatherRepo.isIndianLocation(19.0760, 72.8777, null, "Maharashtra"))
+        // Bengaluru coordinates
+        assertTrue(weatherRepo.isIndianLocation(12.9716, 77.5946, null, null))
+        // Chennai coordinates
+        assertTrue(weatherRepo.isIndianLocation(13.0827, 80.2707, null, "Tamil Nadu"))
+        // Port Blair (Andaman & Nicobar Islands)
+        assertTrue(weatherRepo.isIndianLocation(11.6234, 92.7265, null, null))
+        // Srinagar, Kashmir coordinates
+        assertTrue(weatherRepo.isIndianLocation(34.0837, 74.7973, null, null))
         // Jaisalmer, Rajasthan
-        assertTrue(weatherRepo.isIndianLocation(26.91, 70.90, "IN"))
-        // Paris (not in India)
-        assertFalse(weatherRepo.isIndianLocation(48.85, 2.35, "France"))
-        // Tokyo (not in India)
-        assertFalse(weatherRepo.isIndianLocation(35.67, 139.65, "Japan"))
+        assertTrue(weatherRepo.isIndianLocation(26.91, 70.90, "IN", "Rajasthan"))
+
+        // Coordinates outside India
+        assertFalse(weatherRepo.isIndianLocation(48.85, 2.35, "France", null)) // Paris
+        assertFalse(weatherRepo.isIndianLocation(35.67, 139.65, "Japan", null)) // Tokyo
+        assertFalse(weatherRepo.isIndianLocation(40.71, -74.00, "United States", "New York")) // New York
+        assertFalse(weatherRepo.isIndianLocation(51.50, -0.12, "United Kingdom", "London")) // London
     }
 
     @Test

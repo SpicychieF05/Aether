@@ -66,7 +66,7 @@ fun StatChipsRow(
             modifier = Modifier.weight(1f)
         )
 
-        // 2. AQI Chip (Dynamically mentions US AQI or European AQI + 7-day range)
+        // 2. AQI Chip (Dynamically mentions NAQI for Indian locations, European AQI, or US AQI)
         if (aqiData != null) {
             val aqiLevelColor = when (aqiData.levelLabel.lowercase()) {
                 "good" -> Color(0xFF81C784)
@@ -79,12 +79,20 @@ fun StatChipsRow(
                 else -> Color(0xFFE57373)
             }
 
+            val isNaqi = aqiData.isNaqiStandard || aqiData.standardName.contains("NAQI", ignoreCase = true)
+            val chipTitle = if (isNaqi) "NAQI (INDIA)" else aqiData.standardName.uppercase()
+            val chipSubtext = if (isNaqi) {
+                "NAQI 7d: ${aqiData.lowestPast7Days} - ${aqiData.highestPast7Days}"
+            } else {
+                "7d: ${aqiData.lowestPast7Days} - ${aqiData.highestPast7Days}"
+            }
+
             StatChip(
                 icon = Icons.Default.Air,
                 iconTint = aqiLevelColor,
-                title = aqiData.standardName.uppercase(),
+                title = chipTitle,
                 value = "${aqiData.currentValue} • ${aqiData.levelLabel}",
-                subtext = "7d: ${aqiData.lowestPast7Days} - ${aqiData.highestPast7Days}",
+                subtext = chipSubtext,
                 modifier = Modifier.weight(1.4f)
             )
         }
