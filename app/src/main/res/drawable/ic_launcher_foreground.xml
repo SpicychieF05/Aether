@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Diorama Glass Sphere Subtle Rim -->
+    <path
+        android:pathData="M54,26 A28,28 0 1 1 53.99,26 Z"
+        android:strokeWidth="1.5"
+        android:strokeColor="#55FFFFFF"
+        android:fillColor="#15FFFFFF" />
+
+    <!-- Golden Sun with soft glow -->
+    <path
+        android:pathData="M44,40 A7,7 0 1 1 43.99,40 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="37"
+                android:startY="33"
+                android:endX="51"
+                android:endY="47"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFE082" />
+                <item android:offset="1.0" android:color="#FF9800" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Sun rays -->
+    <path
+        android:pathData="M44,29 L44,31 M33,40 L35,40 M36.2,32.2 L37.6,33.6 M51.8,32.2 L50.4,33.6"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeColor="#FFD54F" />
+
+    <!-- Diorama Landscape Ground / Hill -->
+    <path
+        android:pathData="M27,67 Q40,60 54,64 Q68,68 81,62 L81,76 Q68,82 54,82 Q40,82 27,76 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="27"
+                android:startY="60"
+                android:endX="81"
+                android:endY="82"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#4DB6AC" />
+                <item android:offset="1.0" android:color="#00695C" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Stylized Foreground Weather Cloud -->
+    <path
+        android:pathData="M47,58 L69,58 A6,6 0 0 0 74,49 A8,8 0 0 0 60,45 A9,9 0 0 0 46,51 A6,6 0 0 0 47,58 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="46"
+                android:startY="43"
+                android:endX="74"
+                android:endY="58"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFFFFF" />
+                <item android:offset="1.0" android:color="#CFD8DC" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Rain Streaks falling from cloud -->
+    <path
+        android:pathData="M52,62 L49,67 M60,62 L57,67 M68,62 L65,67"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:strokeColor="#81D4FA" />
+
+    <!-- Glass dome top highlight reflection -->
+    <path
+        android:pathData="M38,34 A24,24 0 0 1 70,34"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeColor="#66FFFFFF" />
+</vector>

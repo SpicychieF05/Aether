@@ -1,0 +1,6 @@
+{
+  "name": "Aether",
+  "description": "A minimalist weather app featuring living miniature diorama backgrounds responsive to geography and live conditions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
