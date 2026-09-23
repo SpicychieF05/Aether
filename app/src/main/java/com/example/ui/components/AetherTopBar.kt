@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.LocationItem
@@ -37,9 +39,9 @@ import com.example.data.model.LocationItem
 fun AetherTopBar(
     location: LocationItem?,
     onLocationClick: () -> Unit,
-    onSearchClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSearchClick: () -> Unit = onLocationClick
 ) {
     Row(
         modifier = modifier
@@ -49,59 +51,75 @@ fun AetherTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Stylized "æther" wordmark
-        Column {
-            Text(
-                text = "æther",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Light,
-                fontFamily = FontFamily.Serif,
-                letterSpacing = 3.sp
-            )
-        }
+        Text(
+            text = "æther",
+            color = Color.White,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Light,
+            fontFamily = FontFamily.Serif,
+            letterSpacing = 2.5.sp,
+            modifier = Modifier.padding(end = 8.dp)
+        )
 
-        // Location Selector Pill with Terrain Tag
+        // Unified Weather Search Pill (Option 1: Combines location display and search action)
         Box(
             modifier = Modifier
+                .weight(1f, fill = false)
+                .widthIn(max = 320.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color.White.copy(alpha = 0.18f))
+                .background(Color.White.copy(alpha = 0.16f))
                 .clickable(onClick = onLocationClick)
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 7.dp)
                 .testTag("location_selector_pill")
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
+                // Leading icon: GPS arrow if current GPS, or Search magnifying glass
                 if (location?.isGps == true) {
                     Icon(
                         imageVector = Icons.Default.NearMe,
                         contentDescription = "GPS Location",
                         tint = Color(0xFF81D4FA),
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search Location",
+                        tint = Color.White.copy(alpha = 0.75f),
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                 }
 
+                // City Name
                 Text(
-                    text = location?.name ?: "Select City",
+                    text = location?.name ?: "Search location",
                     color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
+                // Terrain tag chip
                 if (location != null) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.25f))
-                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                            .background(Color.White.copy(alpha = 0.22f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = location.terrainCategory.shortLabel,
                             color = Color(0xFFFFE082),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
                         )
                     }
                 }
@@ -109,36 +127,25 @@ fun AetherTopBar(
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Switch Location",
-                    tint = Color.White.copy(alpha = 0.8f),
-                    modifier = Modifier.size(18.dp)
+                    contentDescription = "Change Location",
+                    tint = Color.White.copy(alpha = 0.75f),
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
 
-        // Action Icons (Search & Settings)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = onSearchClick,
-                modifier = Modifier.size(44.dp).testTag("search_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search Locations",
-                    tint = Color.White
-                )
-            }
-
-            IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.size(44.dp).testTag("settings_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Settings",
-                    tint = Color.White
-                )
-            }
+        // Settings Button
+        IconButton(
+            onClick = onSettingsClick,
+            modifier = Modifier
+                .size(44.dp)
+                .testTag("settings_button")
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = Color.White.copy(alpha = 0.9f)
+            )
         }
     }
 }

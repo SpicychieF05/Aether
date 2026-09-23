@@ -28,7 +28,7 @@ abstract class AetherDatabase : RoomDatabase() {
                     context.applicationContext,
                     AetherDatabase::class.java,
                     "aether_weather.db"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration(true).build()
                 INSTANCE = instance
                 instance
             }

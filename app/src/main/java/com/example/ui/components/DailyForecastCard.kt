@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -111,7 +112,9 @@ private fun DailyForecastRow(
             color = Color.White,
             fontSize = 15.sp,
             fontWeight = if (item.dayLabel == "Today") FontWeight.Bold else FontWeight.Normal,
-            modifier = Modifier.width(72.dp)
+            modifier = Modifier.widthIn(min = 84.dp),
+            maxLines = 1,
+            softWrap = false
         )
 
         // Weather Icon
