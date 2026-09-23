@@ -196,5 +196,118 @@ data class WeatherCondition(
                 )
             }
         }
+
+        fun fromTomorrowCode(code: Int, isDay: Boolean = true, windSpeed: Double = 0.0): WeatherCondition {
+            val highWind = windSpeed > 40.0
+            return when (code) {
+                1000 -> WeatherCondition(
+                    code = code,
+                    displayName = if (isDay) "Clear Sky" else "Clear Night",
+                    effectType = if (highWind) WeatherEffectType.WINDY else WeatherEffectType.CLEAR,
+                    isDay = isDay
+                )
+                1100 -> WeatherCondition(
+                    code = code,
+                    displayName = if (isDay) "Mostly Clear" else "Fair Night",
+                    effectType = if (highWind) WeatherEffectType.WINDY else WeatherEffectType.CLEAR,
+                    isDay = isDay
+                )
+                1101 -> WeatherCondition(
+                    code = code,
+                    displayName = "Partly Cloudy",
+                    effectType = WeatherEffectType.CLOUDY,
+                    isDay = isDay
+                )
+                1102 -> WeatherCondition(
+                    code = code,
+                    displayName = "Mostly Cloudy",
+                    effectType = WeatherEffectType.CLOUDY,
+                    isDay = isDay
+                )
+                1001 -> WeatherCondition(
+                    code = code,
+                    displayName = "Overcast",
+                    effectType = WeatherEffectType.CLOUDY,
+                    isDay = isDay
+                )
+                2000, 2100 -> WeatherCondition(
+                    code = code,
+                    displayName = if (code == 2100) "Light Fog" else "Fog",
+                    effectType = WeatherEffectType.FOG,
+                    isDay = isDay,
+                    fogIntensity = if (code == 2100) 0.5f else 0.85f
+                )
+                4000 -> WeatherCondition(
+                    code = code,
+                    displayName = "Drizzle",
+                    effectType = WeatherEffectType.RAIN,
+                    isDay = isDay,
+                    rainIntensity = 0.3f
+                )
+                4001 -> WeatherCondition(
+                    code = code,
+                    displayName = "Rain",
+                    effectType = WeatherEffectType.RAIN,
+                    isDay = isDay,
+                    rainIntensity = 0.65f
+                )
+                4200 -> WeatherCondition(
+                    code = code,
+                    displayName = "Light Rain",
+                    effectType = WeatherEffectType.RAIN,
+                    isDay = isDay,
+                    rainIntensity = 0.4f
+                )
+                4201 -> WeatherCondition(
+                    code = code,
+                    displayName = "Heavy Rain",
+                    effectType = WeatherEffectType.RAIN,
+                    isDay = isDay,
+                    rainIntensity = 1.0f
+                )
+                5000, 5100 -> WeatherCondition(
+                    code = code,
+                    displayName = if (code == 5100) "Light Snow" else "Snow",
+                    effectType = WeatherEffectType.SNOW,
+                    isDay = isDay,
+                    snowIntensity = if (code == 5100) 0.35f else 0.7f
+                )
+                5001 -> WeatherCondition(
+                    code = code,
+                    displayName = "Heavy Snow",
+                    effectType = WeatherEffectType.SNOW,
+                    isDay = isDay,
+                    snowIntensity = 1.0f
+                )
+                6000, 6200, 6001, 6201 -> WeatherCondition(
+                    code = code,
+                    displayName = "Freezing Rain",
+                    effectType = WeatherEffectType.RAIN,
+                    isDay = isDay,
+                    rainIntensity = 0.6f
+                )
+                7000, 7101, 7102 -> WeatherCondition(
+                    code = code,
+                    displayName = "Ice Pellets",
+                    effectType = WeatherEffectType.SNOW,
+                    isDay = isDay,
+                    snowIntensity = 0.5f
+                )
+                8000 -> WeatherCondition(
+                    code = code,
+                    displayName = "Thunderstorm",
+                    effectType = WeatherEffectType.THUNDERSTORM,
+                    isDay = isDay,
+                    rainIntensity = 0.9f,
+                    isThunder = true
+                )
+                else -> WeatherCondition(
+                    code = code,
+                    displayName = if (isDay) "Fair" else "Clear",
+                    effectType = WeatherEffectType.CLEAR,
+                    isDay = isDay
+                )
+            }
+        }
     }
 }

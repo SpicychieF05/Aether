@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,13 +45,13 @@ fun HourlyForecastStrip(
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(Color.Black.copy(alpha = 0.28f))
-            .padding(vertical = 12.dp)
+            .padding(top = 14.dp, bottom = 12.dp)
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                    .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -61,7 +62,7 @@ fun HourlyForecastStrip(
                         tint = Color.White.copy(alpha = 0.6f),
                         modifier = Modifier.size(14.dp)
                     )
-                    Spacer(modifier = Modifier.padding(3.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "24-HOUR FORECAST • TAP TO SCRUB",
                         color = Color.White.copy(alpha = 0.6f),
@@ -85,7 +86,7 @@ fun HourlyForecastStrip(
             Spacer(modifier = Modifier.height(10.dp))
 
             LazyRow(
-                contentPadding = PaddingValues(horizontal = 12.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(hourlyList) { index, item ->
@@ -111,7 +112,7 @@ fun HourlyForecastStrip(
                                     onHourSelected(index)
                                 }
                             }
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -139,13 +140,20 @@ fun HourlyForecastStrip(
                             fontWeight = FontWeight.SemiBold
                         )
 
+                        // Consistent baseline: keep height even when precip is 0 or low
+                        Spacer(modifier = Modifier.height(3.dp))
                         if (item.precipProb > 15) {
-                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "${item.precipProb}%",
                                 color = Color(0xFF64B5F6),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            // Invisible placeholder so all columns share an identical height and baseline
+                            Text(
+                                text = " ",
+                                fontSize = 10.sp
                             )
                         }
                     }

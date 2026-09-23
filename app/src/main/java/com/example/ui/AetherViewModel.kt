@@ -34,6 +34,7 @@ data class AetherUiState(
     val isFahrenheit: Boolean = false,
     val thunderHapticsEnabled: Boolean = true,
     val scrubberHapticsEnabled: Boolean = true,
+    val selectedProvider: com.example.data.repository.WeatherProvider = com.example.data.repository.WeatherProvider.OPEN_METEO,
     val savedLocations: List<SavedLocationEntity> = emptyList(),
     val recentSearches: List<SearchHistoryEntity> = emptyList(),
     val searchResults: List<LocationItem> = emptyList(),
@@ -45,15 +46,23 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
 
     private val database = AetherDatabase.getDatabase(application)
     private val weatherRepository = WeatherRepository(database)
-    private val locationRepository: LocationRepository = DefaultLocationRepository(application, database)
+    private val locationRepository: LocationRepository = DefaultLocationRepository(application, database, weatherRepository)
 
     private val prefs = application.getSharedPreferences("aether_prefs", Context.MODE_PRIVATE)
+
+    private val savedProviderName = prefs.getString("pref_weather_provider", com.example.data.repository.WeatherProvider.OPEN_METEO.name)
+    private val initialProvider = try {
+        com.example.data.repository.WeatherProvider.valueOf(savedProviderName ?: com.example.data.repository.WeatherProvider.OPEN_METEO.name)
+    } catch (_: Exception) {
+        com.example.data.repository.WeatherProvider.OPEN_METEO
+    }
 
     private val _uiState = MutableStateFlow(
         AetherUiState(
             isFahrenheit = prefs.getBoolean("pref_is_fahrenheit", false),
             thunderHapticsEnabled = prefs.getBoolean("pref_thunder_haptics", true),
-            scrubberHapticsEnabled = prefs.getBoolean("pref_scrubber_haptics", true)
+            scrubberHapticsEnabled = prefs.getBoolean("pref_scrubber_haptics", true),
+            selectedProvider = initialProvider
         )
     )
     val uiState: StateFlow<AetherUiState> = _uiState.asStateFlow()
@@ -87,7 +96,12 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
                     scrubbedHourIndex = null
                 )
             }
-            val result = weatherRepository.fetchWeather(location)
+            val currentProvider = _uiState.value.selectedProvider
+            val result = weatherRepository.fetchWeather(
+                location = location,
+                preferredProvider = currentProvider,
+                forceRefresh = isRefresh
+            )
             result.fold(
                 onSuccess = { state ->
                     _uiState.update {
@@ -100,15 +114,60 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
                     }
                 },
                 onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isRefreshing = false,
-                            errorMessage = error.localizedMessage ?: "Unable to fetch live weather"
+                    // Option A: If Tomorrow.io failed (e.g. rate limit), automatically fallback to Open-Meteo
+                    if (currentProvider == com.example.data.repository.WeatherProvider.TOMORROW_IO) {
+                        val fallback = weatherRepository.fetchWeather(
+                            location = location,
+                            preferredProvider = com.example.data.repository.WeatherProvider.OPEN_METEO,
+                            forceRefresh = isRefresh
                         )
+                        fallback.fold(
+                            onSuccess = { fallbackState ->
+                                _uiState.update {
+                                    it.copy(
+                                        weatherState = fallbackState,
+                                        isLoading = false,
+                                        isRefreshing = false,
+                                        errorMessage = "Tomorrow.io limit reached; showing Open-Meteo"
+                                    )
+                                }
+                            },
+                            onFailure = {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        isRefreshing = false,
+                                        errorMessage = error.localizedMessage ?: "Unable to fetch live weather"
+                                    )
+                                }
+                            }
+                        )
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                isRefreshing = false,
+                                errorMessage = error.localizedMessage ?: "Unable to fetch live weather"
+                            )
+                        }
                     }
                 }
             )
+        }
+    }
+
+    fun setWeatherProvider(provider: com.example.data.repository.WeatherProvider) {
+        _uiState.update { it.copy(selectedProvider = provider) }
+        _uiState.value.weatherState?.location?.let {
+            loadWeather(it, isRefresh = true)
+        }
+    }
+
+    fun saveDefaultWeatherProvider(provider: com.example.data.repository.WeatherProvider) {
+        prefs.edit().putString("pref_weather_provider", provider.name).apply()
+        _uiState.update { it.copy(selectedProvider = provider) }
+        _uiState.value.weatherState?.location?.let {
+            loadWeather(it, isRefresh = true)
         }
     }
 

@@ -36,5 +36,6 @@ data class WeatherCacheEntity(
     val admin1: String?,
     val country: String?,
     val terrainCategory: String,
-    val cachedAt: Long = System.currentTimeMillis()
+    val cachedAt: Long = System.currentTimeMillis(),
+    val provider: String = "Open-Meteo"
 )

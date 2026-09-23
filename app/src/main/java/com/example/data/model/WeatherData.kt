@@ -67,7 +67,9 @@ data class AqiData(
     val highestPast7Days: Int,
     val lowestPast7Days: Int,
     val isNaqiStandard: Boolean = false,
-    val providerDescription: String = ""
+    val providerDescription: String = "",
+    val stationName: String? = null,
+    val distanceKm: Double? = null
 )
 
 data class AetherWeatherState(
@@ -77,5 +79,6 @@ data class AetherWeatherState(
     val daily: List<DailyItem>,
     val aqi: AqiData?,
     val lastUpdated: Long = System.currentTimeMillis(),
-    val isCached: Boolean = false
+    val isCached: Boolean = false,
+    val providerName: String = "Open-Meteo"
 )

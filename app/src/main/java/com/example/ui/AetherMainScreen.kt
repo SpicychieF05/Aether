@@ -244,9 +244,12 @@ fun AetherMainScreen(
                 isFahrenheit = uiState.isFahrenheit,
                 thunderHapticsEnabled = uiState.thunderHapticsEnabled,
                 scrubberHapticsEnabled = uiState.scrubberHapticsEnabled,
+                selectedProvider = uiState.selectedProvider,
                 onUnitChanged = { viewModel.setTemperatureUnit(it) },
                 onThunderHapticsChanged = { viewModel.setThunderHaptics(it) },
                 onScrubberHapticsChanged = { viewModel.setScrubberHaptics(it) },
+                onProviderSelected = { viewModel.setWeatherProvider(it) },
+                onSaveDefaultProvider = { viewModel.saveDefaultWeatherProvider(it) },
                 onDismiss = { showSettingsSheet = false }
             )
         }
@@ -316,7 +319,7 @@ private fun CompactPhoneLayout(
                     }
                     .verticalScroll(rememberScrollState())
             ) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Hero Current Weather Card
                 CurrentWeatherCard(

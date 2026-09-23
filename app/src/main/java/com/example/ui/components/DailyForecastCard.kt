@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -23,6 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -140,32 +143,37 @@ private fun DailyForecastRow(
         val startFrac = ((item.tempMinC - globalMin) / rangeSpan).toFloat().coerceIn(0f, 1f)
         val endFrac = ((item.tempMaxC - globalMin) / rangeSpan).toFloat().coerceIn(0f, 1f)
 
-        Box(
+        Canvas(
             modifier = Modifier
                 .weight(1f)
                 .height(6.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.12f))
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                if (startFrac > 0f) {
-                    Spacer(modifier = Modifier.weight(startFrac.coerceAtLeast(0.001f)))
-                }
-                Box(
-                    modifier = Modifier
-                        .weight((endFrac - startFrac).coerceAtLeast(0.05f))
-                        .height(6.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(Color(0xFF64B5F6), Color(0xFFFFB74D))
-                            )
-                        )
-                )
-                if ((1f - endFrac) > 0f) {
-                    Spacer(modifier = Modifier.weight((1f - endFrac).coerceAtLeast(0.001f)))
-                }
-            }
+            val totalWidth = size.width
+            val barHeight = size.height
+            val corner = CornerRadius(barHeight / 2f, barHeight / 2f)
+
+            // Background track
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.12f),
+                size = Size(totalWidth, barHeight),
+                cornerRadius = corner
+            )
+
+            // Active gradient range
+            val left = (startFrac * totalWidth).coerceAtLeast(0f)
+            val right = (endFrac * totalWidth).coerceAtMost(totalWidth)
+            val rangeWidth = (right - left).coerceAtLeast(barHeight) // Ensure at least a pill dot
+
+            drawRoundRect(
+                brush = Brush.horizontalGradient(
+                    colors = listOf(Color(0xFF64B5F6), Color(0xFFFFB74D)),
+                    startX = 0f,
+                    endX = totalWidth
+                ),
+                topLeft = Offset(left.coerceAtMost(totalWidth - rangeWidth), 0f),
+                size = Size(rangeWidth, barHeight),
+                cornerRadius = corner
+            )
         }
 
         Spacer(modifier = Modifier.width(12.dp))

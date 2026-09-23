@@ -1,6 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,11 +13,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -25,14 +34,20 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.repository.WeatherProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,11 +56,16 @@ fun SettingsBottomSheet(
     isFahrenheit: Boolean,
     thunderHapticsEnabled: Boolean,
     scrubberHapticsEnabled: Boolean,
+    selectedProvider: WeatherProvider,
     onUnitChanged: (Boolean) -> Unit,
     onThunderHapticsChanged: (Boolean) -> Unit,
     onScrubberHapticsChanged: (Boolean) -> Unit,
+    onProviderSelected: (WeatherProvider) -> Unit,
+    onSaveDefaultProvider: (WeatherProvider) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var savedFeedbackText by remember { mutableStateOf<String?>(null) }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -66,6 +86,185 @@ fun SettingsBottomSheet(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Weather Provider Section (Question 1)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Cloud,
+                    contentDescription = null,
+                    tint = Color(0xFF81D4FA),
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Weather API Provider",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Choose weather & air quality forecast source",
+                        color = Color.White.copy(alpha = 0.6f),
+                        fontSize = 13.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Provider Choice Cards
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Open-Meteo Choice
+                val isOpenMeteoSelected = selectedProvider == WeatherProvider.OPEN_METEO
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isOpenMeteoSelected) Color(0xFFFFD54F).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f))
+                        .border(
+                            width = if (isOpenMeteoSelected) 1.5.dp else 1.dp,
+                            color = if (isOpenMeteoSelected) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        .clickable {
+                            savedFeedbackText = null
+                            onProviderSelected(WeatherProvider.OPEN_METEO)
+                        }
+                        .padding(12.dp)
+                        .testTag("provider_open_meteo")
+                ) {
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Open-Meteo",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Icon(
+                                imageVector = if (isOpenMeteoSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = if (isOpenMeteoSelected) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.4f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Free, unlimited rate limits, global open models",
+                            color = Color.White.copy(alpha = 0.65f),
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+
+                // Tomorrow.io Choice
+                val isTomorrowSelected = selectedProvider == WeatherProvider.TOMORROW_IO
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isTomorrowSelected) Color(0xFFFFD54F).copy(alpha = 0.15f) else Color.White.copy(alpha = 0.05f))
+                        .border(
+                            width = if (isTomorrowSelected) 1.5.dp else 1.dp,
+                            color = if (isTomorrowSelected) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.12f),
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        .clickable {
+                            savedFeedbackText = null
+                            onProviderSelected(WeatherProvider.TOMORROW_IO)
+                        }
+                        .padding(12.dp)
+                        .testTag("provider_tomorrow_io")
+                ) {
+                    Column {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Tomorrow.io",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Icon(
+                                imageVector = if (isTomorrowSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = if (isTomorrowSelected) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.4f),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Hyper-local v4 API, includes auto-fallback",
+                            color = Color.White.copy(alpha = 0.65f),
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Save as Default Provider Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = {
+                        onSaveDefaultProvider(selectedProvider)
+                        savedFeedbackText = "${selectedProvider.displayName} saved as default!"
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White.copy(alpha = 0.12f),
+                        contentColor = Color(0xFFFFD54F)
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("save_default_provider_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Bookmark,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Save as Default",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                if (savedFeedbackText != null) {
+                    Text(
+                        text = savedFeedbackText!!,
+                        color = Color(0xFFAED581),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 16.dp),
+                color = Color.White.copy(alpha = 0.08f)
+            )
 
             // Unit Preference Section
             Row(
@@ -248,7 +447,7 @@ fun SettingsBottomSheet(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "v1.0",
+                            text = "v1.1",
                             color = Color(0xFFFFD54F),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
@@ -271,8 +470,8 @@ fun SettingsBottomSheet(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Meteorological & Air Quality data by Open-Meteo",
-                            color = Color.White.copy(alpha = 0.45f),
+                            text = "Powered by ${selectedProvider.displayName} • CPCB / WAQI Ground Stations • OSM Indian Places",
+                            color = Color.White.copy(alpha = 0.55f),
                             fontSize = 11.sp
                         )
                     }

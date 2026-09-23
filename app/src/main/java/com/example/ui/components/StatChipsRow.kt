@@ -60,10 +60,19 @@ fun StatChipsRow(
 
     val isNaqi = aqiData?.isNaqiStandard == true || aqiData?.standardName?.contains("NAQI", ignoreCase = true) == true
     val aqiTitle = if (isNaqi) "NAQI (INDIA)" else (aqiData?.standardName?.uppercase() ?: "AIR QUALITY")
-    val aqiSubtext = if (isNaqi) {
-        "7d: ${aqiData?.lowestPast7Days ?: 0} - ${aqiData?.highestPast7Days ?: 0}"
-    } else {
-        "7d: ${aqiData?.lowestPast7Days ?: 0} - ${aqiData?.highestPast7Days ?: 0}"
+    val aqiSubtext = when {
+        aqiData?.stationName != null && aqiData.distanceKm != null -> {
+            "${aqiData.stationName} (${aqiData.distanceKm.toInt()} km)"
+        }
+        aqiData?.stationName != null -> {
+            aqiData.stationName
+        }
+        isNaqi -> {
+            "7d: ${aqiData?.lowestPast7Days ?: 0} - ${aqiData?.highestPast7Days ?: 0}"
+        }
+        else -> {
+            "7d: ${aqiData?.lowestPast7Days ?: 0} - ${aqiData?.highestPast7Days ?: 0}"
+        }
     }
 
     // Adaptive layout based on available container width
