@@ -1,10 +1,13 @@
-name: Build Android APK
+name: Release Android APK
 
 on:
-  workflow_dispatch: # Allows manual trigger with 1 click
   push:
     tags:
-      - 'v*'
+      - 'v*' # Triggers ONLY when you push a version tag like v1.1.0, v1.2.0, etc.
+  workflow_dispatch: # Also allows you to trigger manually from GitHub Actions UI
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -20,21 +23,48 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK with Gradle
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Build APK using Gradle
+        run: gradle assembleDebug --no-daemon
 
-      - name: Rename APK
+      - name: Extract Tag or Version Name
+        id: get_version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF#refs/tags/}"
+          else
+            TAG_NAME="v1.1.0"
+          fi
+          echo "VERSION_TAG=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Prepare APK & Calculate Checksum
         run: |
           mkdir -p output
-          cp app/build/outputs/apk/debug/app-debug.apk output/Aether-v1.1.0.apk
-          sha256sum output/Aether-v1.1.0.apk > output/checksum.txt
-          cat output/checksum.txt
+          VERSION_TAG="${{ steps.get_version.outputs.VERSION_TAG }}"
+          APK_FILE="output/Aether-${VERSION_TAG}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK_FILE"
+          cd output
+          sha256sum "Aether-${VERSION_TAG}.apk" > checksum.txt
+          cat checksum.txt
+          cd ..
 
-      - name: Upload APK Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Aether-v1.1.0-APK
+          name: Aether-APK-${{ steps.get_version.outputs.VERSION_TAG }}
           path: output/
+
+      - name: Publish GitHub Release (When Tagged)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ steps.get_version.outputs.VERSION_TAG }}
+          tag_name: ${{ steps.get_version.outputs.VERSION_TAG }}
+          files: |
+            output/*.apk
+            output/checksum.txt
+          generate_release_notes: true
+          draft: false
+          prerelease: false
