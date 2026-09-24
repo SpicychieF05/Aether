@@ -40,8 +40,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.TextButton
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import com.example.data.model.AetherWeatherState
@@ -62,17 +68,39 @@ import com.example.ui.diorama.MiniatureDioramaView
 fun AetherMainScreen(
     viewModel: AetherViewModel,
     modifier: Modifier = Modifier,
-    windowWidthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact
+    windowWidthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
+    initialOpenSettings: Boolean = false
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     // Bottom sheet visibility states
     var showLocationSheet by remember { mutableStateOf(false) }
-    var showSettingsSheet by remember { mutableStateOf(false) }
+    var showSettingsSheet by remember { mutableStateOf(initialOpenSettings) }
+    var showUpdateNotificationDialog by remember { mutableStateOf(false) }
 
     val locationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    // Trigger update popup if background check found an update
+    LaunchedEffect(updateState.updateInfo) {
+        if (updateState.updateInfo?.hasUpdate == true) {
+            showUpdateNotificationDialog = true
+        }
+    }
+
+    // Permission launcher for Notifications on Android 13+ (POST_NOTIFICATIONS)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> }
+
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     // Runtime location permission launcher
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -250,12 +278,71 @@ fun AetherMainScreen(
                 thunderHapticsEnabled = uiState.thunderHapticsEnabled,
                 scrubberHapticsEnabled = uiState.scrubberHapticsEnabled,
                 selectedProvider = uiState.selectedProvider,
+                updateState = updateState,
                 onUnitChanged = { viewModel.setTemperatureUnit(it) },
                 onThunderHapticsChanged = { viewModel.setThunderHaptics(it) },
                 onScrubberHapticsChanged = { viewModel.setScrubberHaptics(it) },
                 onProviderSelected = { viewModel.setWeatherProvider(it) },
                 onSaveDefaultProvider = { viewModel.saveDefaultWeatherProvider(it) },
+                onCheckForUpdates = { viewModel.checkForAppUpdates(isManual = true) },
+                onInstallUpdate = { info -> viewModel.startApkDownload(context, info) },
                 onDismiss = { showSettingsSheet = false }
+            )
+        }
+
+        // Automatic In-App Update Notification Alert Dialog
+        if (showUpdateNotificationDialog && updateState.updateInfo?.hasUpdate == true) {
+            val updateInfo = updateState.updateInfo!!
+            AlertDialog(
+                onDismissRequest = { showUpdateNotificationDialog = false },
+                title = {
+                    Text(
+                        text = "New Update Available",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Aether ${updateInfo.latestVersion} has been released!",
+                            color = Color(0xFFFFD54F),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "To review release details and install the update, open the Settings screen.",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 13.sp,
+                            lineHeight = 18.sp
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showUpdateNotificationDialog = false
+                            showSettingsSheet = true
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF64B5F6),
+                            contentColor = Color(0xFF0D47A1)
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Open Settings", fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { showUpdateNotificationDialog = false }
+                    ) {
+                        Text("Later", color = Color.White.copy(alpha = 0.6f))
+                    }
+                },
+                containerColor = Color(0xFF1E2638),
+                shape = RoundedCornerShape(18.dp)
             )
         }
     }

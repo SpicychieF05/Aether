@@ -28,6 +28,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.example.data.model.CurrentWeather
 import com.example.data.model.DailyItem
 import com.example.data.model.HourlyItem
@@ -54,6 +56,8 @@ fun CurrentWeatherCard(
         admin1 = location.admin1
     )
 
+    val haptic = LocalHapticFeedback.current
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -66,7 +70,12 @@ fun CurrentWeatherCard(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .background(Color(0xFFFFD54F).copy(alpha = 0.25f))
-                    .clickable(onClick = onResetScrubber)
+                    .clickable {
+                        try {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        } catch (_: Exception) {}
+                        onResetScrubber()
+                    }
                     .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

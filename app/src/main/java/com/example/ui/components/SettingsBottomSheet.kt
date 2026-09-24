@@ -28,6 +28,18 @@ import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.CircularProgressIndicator
+import com.example.data.update.AppUpdateInfo
+import com.example.ui.UpdateUiState
 import androidx.compose.ui.platform.LocalContext
 import android.content.Intent
 import android.net.Uri
@@ -65,14 +77,18 @@ fun SettingsBottomSheet(
     thunderHapticsEnabled: Boolean,
     scrubberHapticsEnabled: Boolean,
     selectedProvider: WeatherProvider,
+    updateState: UpdateUiState = UpdateUiState(),
     onUnitChanged: (Boolean) -> Unit,
     onThunderHapticsChanged: (Boolean) -> Unit,
     onScrubberHapticsChanged: (Boolean) -> Unit,
     onProviderSelected: (WeatherProvider) -> Unit,
     onSaveDefaultProvider: (WeatherProvider) -> Unit,
+    onCheckForUpdates: () -> Unit = {},
+    onInstallUpdate: (AppUpdateInfo) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     var savedFeedbackText by remember { mutableStateOf<String?>(null) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -488,6 +504,155 @@ fun SettingsBottomSheet(
                 }
             }
 
+            // In-App Self-Update Section
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.White.copy(alpha = 0.06f))
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF64B5F6).copy(alpha = 0.16f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SystemUpdate,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64B5F6),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "App Updates",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 15.sp
+                                )
+                                Text(
+                                    text = "Current: v1.1.0",
+                                    color = Color.White.copy(alpha = 0.55f),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = onCheckForUpdates,
+                            enabled = !updateState.isChecking && !updateState.isDownloading,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF64B5F6).copy(alpha = 0.2f),
+                                contentColor = Color(0xFF64B5F6)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF64B5F6).copy(alpha = 0.5f))
+                        ) {
+                            if (updateState.isChecking) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color(0xFF64B5F6),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Checking...", fontSize = 12.sp)
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Check Updates", fontSize = 12.sp)
+                            }
+                        }
+                    }
+
+                    // Update Status / Feedback Message
+                    updateState.checkMessage?.let { msg ->
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.35f))
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = msg,
+                                color = if (updateState.updateInfo?.hasUpdate == true) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.75f),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+
+                    // If a newer release is detected
+                    val updateInfo = updateState.updateInfo
+                    if (updateInfo != null && updateInfo.hasUpdate) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "Release: ${updateInfo.releaseTitle}",
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                        if (updateInfo.releaseNotes.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = updateInfo.releaseNotes.take(160) + if (updateInfo.releaseNotes.length > 160) "..." else "",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = { onInstallUpdate(updateInfo) },
+                            enabled = !updateState.isDownloading,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF81C784),
+                                contentColor = Color(0xFF1B5E20)
+                            )
+                        ) {
+                            if (updateState.isDownloading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color(0xFF1B5E20),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Downloading & Preparing APK...", fontWeight = FontWeight.Bold)
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Install ${updateInfo.latestVersion}", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
             // Connect with Developer Button
@@ -528,6 +693,89 @@ fun SettingsBottomSheet(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Privacy Policy Button
+            Button(
+                onClick = { showPrivacyDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White.copy(alpha = 0.08f),
+                    contentColor = Color.White.copy(alpha = 0.85f)
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PrivacyTip,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = Color(0xFF81C784)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Privacy Policy",
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            // Privacy Policy Dialog
+            if (showPrivacyDialog) {
+                AlertDialog(
+                    onDismissRequest = { showPrivacyDialog = false },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.PrivacyTip,
+                                contentDescription = null,
+                                tint = Color(0xFF81C784),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Privacy Policy", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    text = {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            Text(
+                                text = "Aether values your privacy.",
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "• Location Access: Used solely to fetch real-time local weather forecast and diorama visualization. Location coordinates are processed ephemerally and are never tracked, stored on any server, or sold to third parties.\n\n" +
+                                        "• Local Storage: Search history, saved favorite cities, and cached weather telemetry stay 100% on your device in a secure local Room database.\n\n" +
+                                        "• Network Security: All weather requests (Open-Meteo, Tomorrow.io, WAQI) are communicated over encrypted HTTPS connections.\n\n" +
+                                        "• Sideloaded Updates: App update checks communicate directly with the open-source GitHub Releases repository without telemetry or user profiling.",
+                                color = Color.White.copy(alpha = 0.78f),
+                                fontSize = 13.sp,
+                                lineHeight = 18.sp
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showPrivacyDialog = false }) {
+                            Text("Close", color = Color(0xFF64B5F6), fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    containerColor = Color(0xFF1E2638),
+                    shape = RoundedCornerShape(18.dp)
+                )
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
         }
     }

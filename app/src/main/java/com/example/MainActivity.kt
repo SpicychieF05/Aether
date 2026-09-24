@@ -18,13 +18,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val shouldOpenSettings = intent?.getBooleanExtra("OPEN_SETTINGS_UPDATE", false) ?: false
+
         setContent {
             val windowSizeClass = calculateWindowSizeClass(this)
             val viewModel: AetherViewModel = viewModel()
             AetherTheme {
                 AetherMainScreen(
                     viewModel = viewModel,
-                    windowWidthSizeClass = windowSizeClass.widthSizeClass
+                    windowWidthSizeClass = windowSizeClass.widthSizeClass,
+                    initialOpenSettings = shouldOpenSettings
                 )
             }
         }

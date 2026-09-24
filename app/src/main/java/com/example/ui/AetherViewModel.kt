@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.AetherDatabase
@@ -42,6 +43,15 @@ data class AetherUiState(
     val searchQuery: String = ""
 )
 
+data class UpdateUiState(
+    val isChecking: Boolean = false,
+    val updateInfo: com.example.data.update.AppUpdateInfo? = null,
+    val checkMessage: String? = null,
+    val isDownloading: Boolean = false,
+    val downloadProgress: Float? = null,
+    val installReadyUri: android.net.Uri? = null
+)
+
 class AetherViewModel(application: Application) : AndroidViewModel(application) {
 
     private val database = AetherDatabase.getDatabase(application)
@@ -67,6 +77,9 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
     )
     val uiState: StateFlow<AetherUiState> = _uiState.asStateFlow()
 
+    private val _updateState = MutableStateFlow(UpdateUiState())
+    val updateState: StateFlow<UpdateUiState> = _updateState.asStateFlow()
+
     private var searchJob: Job? = null
 
     init {
@@ -84,6 +97,80 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
 
         // Set Kolkata as default for everyone on first launch via LocationRepository
         loadWeather(locationRepository.getDefaultLocation())
+
+        // Automatic background check for updates on startup
+        checkForAppUpdates(isManual = false)
+    }
+
+    /**
+     * Checks for updates from GitHub Releases API.
+     * When isManual = false: silently checks, and if a newer version is released,
+     * it displays an in-app banner/dialog and triggers a system status bar notification.
+     * When isManual = true: displays a feedback message ("Aether is up to date" or new version details).
+     */
+    fun checkForAppUpdates(isManual: Boolean = false) {
+        viewModelScope.launch {
+            _updateState.update { it.copy(isChecking = true, checkMessage = if (isManual) "Checking for updates..." else null) }
+            val currentVersion = com.example.BuildConfig.VERSION_NAME
+            val result = com.example.data.update.UpdateManager.checkLatestRelease(currentVersion)
+
+            result.fold(
+                onSuccess = { info ->
+                    _updateState.update {
+                        it.copy(
+                            isChecking = false,
+                            updateInfo = info,
+                            checkMessage = if (info.hasUpdate) {
+                                "New version ${info.latestVersion} available!"
+                            } else if (isManual) {
+                                "Aether is up to date (v$currentVersion)"
+                            } else null
+                        )
+                    }
+                    // Trigger Android system notification if a newer version is available
+                    if (info.hasUpdate) {
+                        try {
+                            com.example.data.update.UpdateManager.postUpdateNotification(getApplication(), info)
+                        } catch (e: Exception) {
+                            Log.e("AetherViewModel", "Failed to post notification", e)
+                        }
+                    }
+                },
+                onFailure = { error ->
+                    _updateState.update {
+                        it.copy(
+                            isChecking = false,
+                            checkMessage = if (isManual) "Unable to check updates: ${error.localizedMessage ?: "Network error"}" else null
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    fun startApkDownload(context: Context, info: com.example.data.update.AppUpdateInfo) {
+        _updateState.update { it.copy(isDownloading = true, checkMessage = "Downloading ${info.apkFileName}...") }
+        com.example.data.update.UpdateManager.startDownload(
+            context = context,
+            apkUrl = info.apkDownloadUrl,
+            fileName = info.apkFileName,
+            onDownloadStarted = {
+                _updateState.update { state -> state.copy(isDownloading = true) }
+            },
+            onInstallReady = { uri ->
+                _updateState.update { state ->
+                    state.copy(
+                        isDownloading = false,
+                        installReadyUri = uri,
+                        checkMessage = "Download completed. Tap Install to finish."
+                    )
+                }
+            }
+        )
+    }
+
+    fun clearUpdateFeedbackMessage() {
+        _updateState.update { it.copy(checkMessage = null) }
     }
 
     fun loadWeather(location: LocationItem, isRefresh: Boolean = false) {
@@ -275,15 +362,34 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun performTickHaptic() {
         try {
-            val vibrator = getVibrator()
+            val vibrator = getVibrator() ?: return
+            if (!vibrator.hasVibrator()) return
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
+                // Try createPredefined(EFFECT_CLICK) first which is much more widely supported than EFFECT_TICK
+                try {
+                    vibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+                } catch (_: Exception) {
+                    try {
+                        vibrator.vibrate(VibrationEffect.createOneShot(20, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } catch (_: Exception) {
+                        @Suppress("DEPRECATION")
+                        vibrator.vibrate(25)
+                    }
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                try {
+                    vibrator.vibrate(VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE))
+                } catch (_: Exception) {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(25)
+                }
             } else {
                 @Suppress("DEPRECATION")
-                vibrator?.vibrate(10)
+                vibrator.vibrate(25)
             }
         } catch (e: Exception) {
-            // Ignore
+            Log.e("AetherViewModel", "performTickHaptic error", e)
         }
     }
 

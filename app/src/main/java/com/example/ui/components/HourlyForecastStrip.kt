@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.HourlyItem
 import com.example.ui.util.WeatherFormatters
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 
 @Composable
 fun HourlyForecastStrip(
@@ -39,6 +41,8 @@ fun HourlyForecastStrip(
     onHourSelected: (Int?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -78,7 +82,12 @@ fun HourlyForecastStrip(
                         color = Color(0xFFFFD54F),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.clickable { onHourSelected(null) }
+                        modifier = Modifier.clickable {
+                            try {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            } catch (_: Exception) {}
+                            onHourSelected(null)
+                        }
                     )
                 }
             }
@@ -104,6 +113,9 @@ fun HourlyForecastStrip(
                             .clip(RoundedCornerShape(14.dp))
                             .background(itemBg)
                             .clickable {
+                                try {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                } catch (_: Exception) {}
                                 if (index == 0 && selectedIndex == null) {
                                     onHourSelected(null)
                                 } else if (isSelected) {
