@@ -280,12 +280,14 @@ fun AetherMainScreen(
                 thunderHapticsEnabled = uiState.thunderHapticsEnabled,
                 scrubberHapticsEnabled = uiState.scrubberHapticsEnabled,
                 selectedProvider = uiState.selectedProvider,
+                isWeatherAlertsPaused = uiState.isWeatherAlertsPaused,
                 updateState = updateState,
                 onUnitChanged = { viewModel.setTemperatureUnit(it) },
                 onThunderHapticsChanged = { viewModel.setThunderHaptics(it) },
                 onScrubberHapticsChanged = { viewModel.setScrubberHaptics(it) },
                 onProviderSelected = { viewModel.setWeatherProvider(it) },
                 onSaveDefaultProvider = { viewModel.saveDefaultWeatherProvider(it) },
+                onWeatherAlertsPausedChanged = { viewModel.setWeatherAlertsPaused(it) },
                 onCheckForUpdates = { viewModel.checkForAppUpdates(isManual = true) },
                 onInstallUpdate = { info -> viewModel.startApkDownload(context, info) },
                 onDismiss = { showSettingsSheet = false }
@@ -476,11 +478,12 @@ private fun CompactPhoneLayout(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Hourly Temperature Trend Line Chart (Smooth cubic curve)
+                    // Hourly Temperature & Rain Trend Line Chart (Redesigned with demo styling)
                     HourlyTemperatureTrendCard(
                         hourlyList = weather.hourly,
                         isFahrenheit = uiState.isFahrenheit,
-                        selectedIndex = uiState.scrubbedHourIndex
+                        selectedIndex = uiState.scrubbedHourIndex,
+                        onHourSelected = { viewModel.setScrubbedHour(it) }
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))

@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Haze: Sun over horizontal haze bands -->
+    <path
+        android:fillColor="#FFA726"
+        android:pathData="M32,18m-7,0a7,7 0,1 1,14 0a7,7 0,1 1,-14 0" />
+    <path
+        android:strokeColor="#FFB74D"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M32,7L32,9 M21,18L23,18 M41,18L43,18" />
+    <path
+        android:strokeColor="#B0BEC5"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M16,28H48" />
+    <path
+        android:strokeColor="#90A4AE"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M20,35H44" />
+    <path
+        android:strokeColor="#78909C"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M24,42H40" />
+</vector>

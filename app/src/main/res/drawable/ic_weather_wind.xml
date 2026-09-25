@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Wind: Breeze streams -->
+    <path
+        android:strokeColor="#80DEEA"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:pathData="M14,16H38C41.3,16 44,13.3 44,10C44,6.7 41.3,4 38,4C34.7,4 32,6.7 32,10" />
+    <path
+        android:strokeColor="#4DD0E1"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:pathData="M10,24H44C47.3,24 50,21.3 50,18C50,14.7 47.3,12 44,12C40.7,12 38,14.7 38,18" />
+    <path
+        android:strokeColor="#26C6DA"
+        android:strokeWidth="2.8"
+        android:strokeLineCap="round"
+        android:pathData="M16,32H34C37.3,32 40,34.7 40,38C40,41.3 37.3,44 34,44C30.7,44 28,41.3 28,38" />
+</vector>

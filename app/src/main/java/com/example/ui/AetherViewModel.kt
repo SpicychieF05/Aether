@@ -9,6 +9,9 @@ import android.os.VibratorManager
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.alert.WeatherAlertEngine
+import com.example.data.alert.WeatherAlertWorker
+import com.example.data.alert.WeatherNotificationManager
 import com.example.data.local.AetherDatabase
 import com.example.data.local.SavedLocationEntity
 import com.example.data.local.SearchHistoryEntity
@@ -40,7 +43,8 @@ data class AetherUiState(
     val recentSearches: List<SearchHistoryEntity> = emptyList(),
     val searchResults: List<LocationItem> = emptyList(),
     val isSearching: Boolean = false,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val isWeatherAlertsPaused: Boolean = false
 )
 
 data class UpdateUiState(
@@ -72,7 +76,8 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
             isFahrenheit = prefs.getBoolean("pref_is_fahrenheit", false),
             thunderHapticsEnabled = prefs.getBoolean("pref_thunder_haptics", true),
             scrubberHapticsEnabled = prefs.getBoolean("pref_scrubber_haptics", true),
-            selectedProvider = initialProvider
+            selectedProvider = initialProvider,
+            isWeatherAlertsPaused = WeatherNotificationManager.isAlertsPaused(application)
         )
     )
     val uiState: StateFlow<AetherUiState> = _uiState.asStateFlow()
@@ -100,6 +105,9 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
 
         // Automatic background check for updates on startup
         checkForAppUpdates(isManual = false)
+
+        // Adaptive background weather alert scheduling
+        WeatherAlertWorker.scheduleAdaptiveWork(application)
     }
 
     /**
@@ -199,6 +207,7 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
                             errorMessage = null
                         )
                     }
+                    processUpcomingAlerts(state)
                 },
                 onFailure = { error ->
                     // Option A: If Tomorrow.io failed (e.g. rate limit), automatically fallback to Open-Meteo
@@ -218,6 +227,7 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
                                         errorMessage = "Tomorrow.io limit reached; showing Open-Meteo"
                                     )
                                 }
+                                processUpcomingAlerts(fallbackState)
                             },
                             onFailure = {
                                 _uiState.update {
@@ -314,6 +324,42 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
     fun setTemperatureUnit(isFahrenheit: Boolean) {
         prefs.edit().putBoolean("pref_is_fahrenheit", isFahrenheit).apply()
         _uiState.update { it.copy(isFahrenheit = isFahrenheit) }
+    }
+
+    fun setWeatherAlertsPaused(paused: Boolean) {
+        WeatherNotificationManager.setAlertsPaused(getApplication(), paused)
+        _uiState.update { it.copy(isWeatherAlertsPaused = paused) }
+        if (!paused) {
+            _uiState.value.weatherState?.let { processUpcomingAlerts(it) }
+        }
+    }
+
+    fun setScrubbedHourByHourOfDay(hourOfDay: Int?) {
+        if (hourOfDay == null || hourOfDay == -1) return
+        val hourly = _uiState.value.weatherState?.hourly ?: return
+        val index = hourly.indexOfFirst { it.hourOfDay == hourOfDay }
+        if (index != -1) {
+            setScrubbedHour(index)
+        }
+    }
+
+    private fun processUpcomingAlerts(state: AetherWeatherState) {
+        viewModelScope.launch {
+            try {
+                val alertEvent = WeatherAlertEngine.analyzeForecast(
+                    location = state.location,
+                    current = state.current,
+                    hourly = state.hourly,
+                    isFahrenheit = _uiState.value.isFahrenheit
+                )
+                if (alertEvent != null && WeatherNotificationManager.shouldNotify(getApplication(), alertEvent)) {
+                    WeatherNotificationManager.postAlertNotification(getApplication(), alertEvent, state.location)
+                }
+                WeatherAlertWorker.scheduleAdaptiveWork(getApplication())
+            } catch (e: Exception) {
+                Log.w("AetherViewModel", "Alert engine processing error", e)
+            }
+        }
     }
 
     fun setThunderHaptics(enabled: Boolean) {

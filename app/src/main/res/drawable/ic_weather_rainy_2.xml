@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Rainy-2 / Moderate Rain -->
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M44,27H22C17.6,27 14,23.4 14,19C14,14.8 17.2,11.4 21.3,11C22.4,6.4 26.5,3 31.5,3C37.6,3 42.5,7.7 42.9,13.7C46.4,14.4 49,17.4 49,21C49,24.3 46.8,27 44,27Z" />
+    <!-- Moderate Angled Rain Streams -->
+    <path
+        android:strokeColor="#29B6F6"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M23,32L19,41 M31,32L27,41 M39,32L35,41 M47,32L43,41" />
+</vector>

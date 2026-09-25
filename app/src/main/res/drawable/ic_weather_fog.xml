@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Fog: Soft Mist Layers -->
+    <path
+        android:strokeColor="#CFD8DC"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M16,14H48" />
+    <path
+        android:strokeColor="#B0BEC5"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M12,22H52" />
+    <path
+        android:strokeColor="#90A4AE"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M16,30H48" />
+    <path
+        android:strokeColor="#78909C"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M20,38H44" />
+</vector>

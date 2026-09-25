@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Clear Night: Crescent Moon & Star -->
+    <path
+        android:fillColor="#90CAF9"
+        android:pathData="M32.5,12C26.7,12 22,16.7 22,22.5C22,28.3 26.7,33 32.5,33C35.2,33 37.6,32 39.5,30.3C34.4,29.9 30.5,25.6 30.5,20.5C30.5,16.4 33,13 36.6,12.1C35.3,12 33.9,12 32.5,12Z" />
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M43,18L44,20.5L46.5,21.5L44,22.5L43,25L42,22.5L39.5,21.5L42,20.5Z" />
+</vector>

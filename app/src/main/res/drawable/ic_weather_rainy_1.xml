@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Rainy-1 / Light Drizzle -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M43,28H23C19.1,28 16,24.9 16,21C16,17.3 18.8,14.3 22.4,14C23.4,10 27,7 31.4,7C36.7,7 41,11.1 41.4,16.4C44.5,17 47,19.6 47,22.8C47,25.7 45.2,28 43,28Z" />
+    <!-- Light Rain Drops -->
+    <path
+        android:strokeColor="#4FC3F7"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M26,33L24,37 M34,33L32,37 M42,33L40,37" />
+</vector>

@@ -1,0 +1,20 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Cloudy-1-Day: Sun behind cloud -->
+    <!-- Sun -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M24,18m-7,0a7,7 0,1 1,14 0a7,7 0,1 1,-14 0" />
+    <path
+        android:strokeColor="#FFC107"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M24,7L24,9.5 M13,18L15.5,18 M16.2,10.2L18,12 M31.8,10.2L30,12" />
+    <!-- Foreground Cloud -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M44,35H24C19.6,35 16,31.4 16,27C16,22.8 19.2,19.4 23.3,19C24.4,14.4 28.5,11 33.5,11C39.6,11 44.5,15.7 44.9,21.7C48.4,22.4 51,25.4 51,29C51,32.3 47.9,35 44,35Z" />
+</vector>

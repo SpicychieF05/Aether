@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Severe Thunderstorm: Dark Storm Cloud + Lightning + Rain -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M44,25H22C17.6,25 14,21.4 14,17C14,12.8 17.2,9.4 21.3,9C22.4,4.4 26.5,1 31.5,1C37.6,1 42.5,5.7 42.9,11.7C46.4,12.4 49,15.4 49,19C49,22.3 46.8,25 44,25Z" />
+    <!-- Rain Streaks -->
+    <path
+        android:strokeColor="#29B6F6"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M18,30L15,38 M44,30L41,38 M49,30L46,38" />
+    <!-- Central Lightning Bolt -->
+    <path
+        android:fillColor="#FFD54F"
+        android:strokeColor="#FF8F00"
+        android:strokeWidth="0.8"
+        android:pathData="M31,24L25,34H31L28,44L38,32H31Z" />
+</vector>

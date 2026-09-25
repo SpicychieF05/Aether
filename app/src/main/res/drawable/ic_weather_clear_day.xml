@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Clear Day: Golden Sun with radial rays -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M32,24m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0" />
+    <!-- Rays -->
+    <path
+        android:strokeColor="#FFC107"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M32,8L32,11 M32,37L32,40 M16,24L19,24 M45,24L48,24 M20.7,12.7L22.8,14.8 M41.2,33.2L43.3,35.3 M20.7,35.3L22.8,33.2 M41.2,14.8L43.3,12.7" />
+</vector>

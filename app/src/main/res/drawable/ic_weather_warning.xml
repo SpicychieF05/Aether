@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Official Severe Weather Warning Badge -->
+    <path
+        android:fillColor="#E53935"
+        android:strokeColor="#FFCDD2"
+        android:strokeWidth="1.5"
+        android:pathData="M32,6L12,42H52L32,6Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30.5,19H33.5V30H30.5V19ZM30.5,33H33.5V36H30.5V33Z" />
+</vector>

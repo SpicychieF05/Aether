@@ -1,0 +1,28 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Snowy: Soft Cloud + Snow Crystals -->
+    <path
+        android:fillColor="#CFD8DC"
+        android:pathData="M43,26H23C19.1,26 16,22.9 16,19C16,15.3 18.8,12.3 22.4,12C23.4,8 27,5 31.4,5C36.7,5 41,9.1 41.4,14.4C44.5,15 47,17.6 47,20.8C47,23.7 45.2,26 43,26Z" />
+    <!-- Flake 1 -->
+    <path
+        android:strokeColor="#E0F7FA"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M23,31L23,37 M20,34L26,34 M21,32L25,36 M21,36L25,32" />
+    <!-- Flake 2 -->
+    <path
+        android:strokeColor="#E0F7FA"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M33,33L33,39 M30,36L36,36 M31,34L35,38 M31,38L35,34" />
+    <!-- Flake 3 -->
+    <path
+        android:strokeColor="#E0F7FA"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M43,31L43,37 M40,34L46,34 M41,32L45,36 M41,36L45,32" />
+</vector>

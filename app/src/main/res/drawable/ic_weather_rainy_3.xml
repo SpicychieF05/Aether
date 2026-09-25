@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="48dp"
+    android:viewportWidth="64"
+    android:viewportHeight="48">
+    <!-- Rainy-3 / Heavy Rain: Dark Cloud with dense rain -->
+    <path
+        android:fillColor="#546E7A"
+        android:pathData="M44,26H22C17.6,26 14,22.4 14,18C14,13.8 17.2,10.4 21.3,10C22.4,5.4 26.5,2 31.5,2C37.6,2 42.5,6.7 42.9,12.7C46.4,13.4 49,16.4 49,20C49,23.3 46.8,26 44,26Z" />
+    <!-- Dense Rain Streams -->
+    <path
+        android:strokeColor="#0288D1"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M21,31L17,42 M28,31L24,42 M35,31L31,42 M42,31L38,42 M49,31L45,42" />
+</vector>

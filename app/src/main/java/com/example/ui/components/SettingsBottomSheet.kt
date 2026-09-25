@@ -29,6 +29,14 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.os.Build
+import android.provider.Settings
+import com.example.data.alert.WeatherNotificationManager
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.foundation.rememberScrollState
@@ -77,12 +85,14 @@ fun SettingsBottomSheet(
     thunderHapticsEnabled: Boolean,
     scrubberHapticsEnabled: Boolean,
     selectedProvider: WeatherProvider,
+    isWeatherAlertsPaused: Boolean = false,
     updateState: UpdateUiState = UpdateUiState(),
     onUnitChanged: (Boolean) -> Unit,
     onThunderHapticsChanged: (Boolean) -> Unit,
     onScrubberHapticsChanged: (Boolean) -> Unit,
     onProviderSelected: (WeatherProvider) -> Unit,
     onSaveDefaultProvider: (WeatherProvider) -> Unit,
+    onWeatherAlertsPausedChanged: (Boolean) -> Unit = {},
     onCheckForUpdates: () -> Unit = {},
     onInstallUpdate: (AppUpdateInfo) -> Unit = {},
     onDismiss: () -> Unit
@@ -104,6 +114,8 @@ fun SettingsBottomSheet(
                 .imePadding()
                 .padding(horizontal = 24.dp, vertical = 12.dp)
         ) {
+            val context = LocalContext.current
+
             Text(
                 text = "SETTINGS",
                 color = Color.White.copy(alpha = 0.6f),
@@ -347,6 +359,121 @@ fun SettingsBottomSheet(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
+                }
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 16.dp),
+                color = Color.White.copy(alpha = 0.08f)
+            )
+
+            // App Permission & Weather Alerts Section (Section 19 & 20)
+            Text(
+                text = "APP PERMISSION • NOTIFICATIONS",
+                color = Color.White.copy(alpha = 0.6f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            val hasNotificationPermission = WeatherNotificationManager.isNotificationPermissionGranted(context)
+
+            val permissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    onWeatherAlertsPausedChanged(false)
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = if (!isWeatherAlertsPaused && hasNotificationPermission) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.4f),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Upcoming Weather Alerts",
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (isWeatherAlertsPaused) {
+                                "Weather alerts are paused"
+                            } else if (!hasNotificationPermission) {
+                                "Weather alerts are paused • Notifications permission required"
+                            } else {
+                                "Proactive upcoming forecast notifications for your GPS location"
+                            },
+                            color = if (!hasNotificationPermission || isWeatherAlertsPaused) Color(0xFFFFCC80) else Color.White.copy(alpha = 0.55f),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+                Switch(
+                    checked = !isWeatherAlertsPaused && hasNotificationPermission,
+                    onCheckedChange = { isEnabled ->
+                        if (isEnabled) {
+                            if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                onWeatherAlertsPausedChanged(false)
+                            }
+                        } else {
+                            onWeatherAlertsPausedChanged(true)
+                        }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color(0xFFFFD54F),
+                        checkedTrackColor = Color(0xFFFFD54F).copy(alpha = 0.4f),
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = Color.White.copy(alpha = 0.2f)
+                    )
+                )
+            }
+
+            if (!hasNotificationPermission) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Button(
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            try {
+                                val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {}
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFB74D).copy(alpha = 0.2f),
+                        contentColor = Color(0xFFFFB74D)
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.NotificationsActive,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Enable Notifications", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
             }
 
@@ -687,7 +814,6 @@ fun SettingsBottomSheet(
             Spacer(modifier = Modifier.height(14.dp))
 
             // Connect with Developer Button
-            val context = LocalContext.current
             Button(
                 onClick = {
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chirantanmallick.vercel.app/"))
