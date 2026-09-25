@@ -315,12 +315,6 @@ fun LocationBottomSheet(
                                         fontSize = 13.sp
                                     )
                                 }
-                                Spacer(modifier = Modifier.weight(1f))
-                                Text(
-                                    text = locItem.terrainCategory.shortLabel,
-                                    color = Color(0xFFFFE082),
-                                    fontSize = 11.sp
-                                )
                             }
                         }
                     }
@@ -329,7 +323,7 @@ fun LocationBottomSheet(
 
                 // "ELSEWHERE" CURATED DESTINATIONS
                 Text(
-                    text = "ELSEWHERE • EXPLORE DIORAMAS",
+                    text = "ELSEWHERE",
                     color = Color.White.copy(alpha = 0.6f),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -361,18 +355,29 @@ fun LocationBottomSheet(
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = curLoc.terrainCategory.shortLabel,
-                                        color = Color(0xFFFFD54F),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                    val destinationSubtitle = curLoc.country ?: curLoc.admin1 ?: ""
+                                    if (destinationSubtitle.isNotEmpty()) {
+                                        Text(
+                                            text = destinationSubtitle,
+                                            color = Color.White.copy(alpha = 0.65f),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Normal
+                                        )
+                                    }
                                     val isCurIndia = curLoc.country?.equals("India", ignoreCase = true) == true ||
                                             (curLoc.latitude in 6.0..37.6 && curLoc.longitude in 68.0..97.6)
                                     if (isCurIndia) {
-                                        Spacer(modifier = Modifier.width(4.dp))
+                                        if (destinationSubtitle.isNotEmpty()) {
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "•",
+                                                color = Color.White.copy(alpha = 0.4f),
+                                                fontSize = 10.sp
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                        }
                                         Text(
-                                            text = "• NAQI",
+                                            text = "NAQI",
                                             color = Color(0xFFAED581),
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.SemiBold
@@ -435,20 +440,6 @@ private fun LocationResultItem(location: LocationItem, onSelect: () -> Unit) {
                         fontWeight = FontWeight.Bold
                     )
                 }
-            }
-
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.12f))
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = location.terrainCategory.shortLabel,
-                    color = Color(0xFFFFE082),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
             }
         }
     }

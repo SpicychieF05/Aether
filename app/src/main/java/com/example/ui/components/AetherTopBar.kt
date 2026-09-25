@@ -105,25 +105,6 @@ fun AetherTopBar(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Terrain tag chip
-                if (location != null) {
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.22f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = location.terrainCategory.shortLabel,
-                            color = Color(0xFFFFE082),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1
-                        )
-                    }
-                }
-
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
