@@ -243,6 +243,11 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun refreshCurrentWeather() {
+        val targetLoc = _uiState.value.weatherState?.location ?: locationRepository.getDefaultLocation()
+        loadWeather(targetLoc, isRefresh = true)
+    }
+
     fun setWeatherProvider(provider: com.example.data.repository.WeatherProvider) {
         _uiState.update { it.copy(selectedProvider = provider) }
         _uiState.value.weatherState?.location?.let {

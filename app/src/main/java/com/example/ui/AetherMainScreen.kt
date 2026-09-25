@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
@@ -58,6 +59,7 @@ import com.example.ui.components.AmbianceOverlay
 import com.example.ui.components.CurrentWeatherCard
 import com.example.ui.components.DailyForecastCard
 import com.example.ui.components.HourlyForecastStrip
+import com.example.ui.components.HourlyTemperatureTrendCard
 import com.example.ui.components.LocationBottomSheet
 import com.example.ui.components.SettingsBottomSheet
 import com.example.ui.components.StatChipsRow
@@ -294,7 +296,9 @@ fun AetherMainScreen(
         if (showUpdateNotificationDialog && updateState.updateInfo?.hasUpdate == true) {
             val updateInfo = updateState.updateInfo!!
             AlertDialog(
-                onDismissRequest = { showUpdateNotificationDialog = false },
+                onDismissRequest = {
+                    if (!updateState.isDownloading) showUpdateNotificationDialog = false
+                },
                 title = {
                     Text(
                         text = "New Update Available",
@@ -310,35 +314,55 @@ fun AetherMainScreen(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
+                        if (updateInfo.releaseNotes.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = updateInfo.releaseNotes.take(150) + if (updateInfo.releaseNotes.length > 150) "..." else "",
+                                color = Color.White.copy(alpha = 0.75f),
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "To review release details and install the update, open the Settings screen.",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 13.sp,
-                            lineHeight = 18.sp
+                            text = if (updateState.isDownloading) "Downloading update in background..." else "Tap Update to download directly from GitHub Releases.",
+                            color = Color.White.copy(alpha = 0.6f),
+                            fontSize = 12.sp
                         )
                     }
                 },
                 confirmButton = {
                     Button(
                         onClick = {
+                            viewModel.startApkDownload(context, updateInfo)
                             showUpdateNotificationDialog = false
-                            showSettingsSheet = true
                         },
+                        enabled = !updateState.isDownloading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF64B5F6),
                             contentColor = Color(0xFF0D47A1)
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text("Open Settings", fontWeight = FontWeight.Bold)
+                        Text(if (updateState.isDownloading) "Downloading..." else "Update", fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
-                    TextButton(
-                        onClick = { showUpdateNotificationDialog = false }
-                    ) {
-                        Text("Later", color = Color.White.copy(alpha = 0.6f))
+                    androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick = {
+                                showUpdateNotificationDialog = false
+                                showSettingsSheet = true
+                            }
+                        ) {
+                            Text("Settings", color = Color.White.copy(alpha = 0.7f))
+                        }
+                        TextButton(
+                            onClick = { showUpdateNotificationDialog = false },
+                            enabled = !updateState.isDownloading
+                        ) {
+                            Text("Later", color = Color.White.copy(alpha = 0.6f))
+                        }
                     }
                 },
                 containerColor = Color(0xFF1E2638),
@@ -354,6 +378,7 @@ fun AetherMainScreen(
  * Features ConstraintLayout structure with match constraints (0dp),
  * smooth scroll container, adaptive 2x2 metric cards, and unified top bar pill.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CompactPhoneLayout(
     weather: AetherWeatherState?,
@@ -398,8 +423,10 @@ private fun CompactPhoneLayout(
                 CircularProgressIndicator(color = Color(0xFFFFD54F))
             }
         } else if (weather != null) {
-            // Scrollable Content Column (Zero-DP match constraints, never clips)
-            Column(
+            // Scrollable Content Column with Pull-To-Refresh gesture
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.refreshCurrentWeather() },
                 modifier = Modifier
                     .constrainAs(contentScrollRef) {
                         top.linkTo(topBarRef.bottom)
@@ -409,67 +436,81 @@ private fun CompactPhoneLayout(
                         width = Dimension.fillToConstraints
                         height = Dimension.fillToConstraints
                     }
-                    .verticalScroll(rememberScrollState())
             ) {
-                Spacer(modifier = Modifier.height(14.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                // Hero Current Weather Card
-                CurrentWeatherCard(
-                    location = weather.location,
-                    currentWeather = weather.current,
-                    todayForecast = weather.daily.firstOrNull(),
-                    scrubbedHour = scrubbedHour,
-                    isFahrenheit = uiState.isFahrenheit,
-                    onResetScrubber = { viewModel.setScrubbedHour(null) }
-                )
+                    // Hero Current Weather Card
+                    CurrentWeatherCard(
+                        location = weather.location,
+                        currentWeather = weather.current,
+                        todayForecast = weather.daily.firstOrNull(),
+                        scrubbedHour = scrubbedHour,
+                        isFahrenheit = uiState.isFahrenheit,
+                        onResetScrubber = { viewModel.setScrubbedHour(null) }
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                // Atmospheric Stat Chips (Adaptive 2-column grid on compact screens)
-                StatChipsRow(
-                    currentWeather = weather.current,
-                    aqiData = weather.aqi,
-                    todayForecast = weather.daily.firstOrNull(),
-                    isFahrenheit = uiState.isFahrenheit
-                )
+                    // Atmospheric Stat Chips (Adaptive 2-column grid on compact screens)
+                    StatChipsRow(
+                        currentWeather = weather.current,
+                        aqiData = weather.aqi,
+                        todayForecast = weather.daily.firstOrNull(),
+                        isFahrenheit = uiState.isFahrenheit
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                // 24-Hour Forecast & Time-Scrubber
-                HourlyForecastStrip(
-                    hourlyList = weather.hourly,
-                    selectedIndex = uiState.scrubbedHourIndex,
-                    isFahrenheit = uiState.isFahrenheit,
-                    onHourSelected = { viewModel.setScrubbedHour(it) }
-                )
+                    // 24-Hour Forecast & Time-Scrubber
+                    HourlyForecastStrip(
+                        hourlyList = weather.hourly,
+                        selectedIndex = uiState.scrubbedHourIndex,
+                        isFahrenheit = uiState.isFahrenheit,
+                        onHourSelected = { viewModel.setScrubbedHour(it) }
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                // 7-Day Forecast Card (With auto-expanding day labels to prevent wrapping)
-                DailyForecastCard(
-                    dailyList = weather.daily,
-                    isFahrenheit = uiState.isFahrenheit
-                )
+                    // Hourly Temperature Trend Line Chart (Smooth cubic curve)
+                    HourlyTemperatureTrendCard(
+                        hourlyList = weather.hourly,
+                        isFahrenheit = uiState.isFahrenheit,
+                        selectedIndex = uiState.scrubbedHourIndex
+                    )
 
-                // Offline Cache Indicator
-                if (weather.isCached) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.Black.copy(alpha = 0.4f))
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "Offline Mode • Showing cached forecast",
-                            color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 11.sp
-                        )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 7-Day Forecast Card (With auto-expanding day labels to prevent wrapping)
+                    DailyForecastCard(
+                        dailyList = weather.daily,
+                        isFahrenheit = uiState.isFahrenheit
+                    )
+
+                    // Offline Cache Indicator
+                    if (weather.isCached) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.Black.copy(alpha = 0.4f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Offline Mode • Showing cached forecast",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 11.sp
+                            )
+                        }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(36.dp))
+                    Spacer(modifier = Modifier.height(36.dp))
+                }
             }
         }
     }
@@ -482,6 +523,7 @@ private fun CompactPhoneLayout(
  * Left Pane: Hero Weather, Interactive Scrubber & 24h forecast.
  * Right Pane: Adaptive Stat Chips Grid & 7-Day Outlook.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MultiPaneAdaptiveLayout(
     weather: AetherWeatherState?,
@@ -559,6 +601,14 @@ private fun MultiPaneAdaptiveLayout(
                     selectedIndex = uiState.scrubbedHourIndex,
                     isFahrenheit = uiState.isFahrenheit,
                     onHourSelected = { viewModel.setScrubbedHour(it) }
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                HourlyTemperatureTrendCard(
+                    hourlyList = weather.hourly,
+                    isFahrenheit = uiState.isFahrenheit,
+                    selectedIndex = uiState.scrubbedHourIndex
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))

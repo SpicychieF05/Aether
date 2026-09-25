@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -403,6 +404,42 @@ class WeatherRepository(private val database: AetherDatabase) {
         return latitude in 6.0..37.6 && longitude in 68.0..97.6
     }
 
+    // --- Timezone and Date Format Helpers ---
+    fun resolveLocationTimeZone(location: LocationItem): TimeZone {
+        if (isIndianLocation(location.latitude, location.longitude, location.country, location.admin1)) {
+            return TimeZone.getTimeZone("Asia/Kolkata")
+        }
+        val rawOffsetHours = (location.longitude / 15.0).toInt()
+        val customTzId = if (rawOffsetHours >= 0) "GMT+$rawOffsetHours" else "GMT$rawOffsetHours"
+        return TimeZone.getTimeZone(customTzId)
+    }
+
+    private fun parseTomorrowUtcIso(isoStr: String?): Date? {
+        if (isoStr.isNullOrEmpty()) return null
+        val patterns = arrayOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm"
+        )
+        for (pattern in patterns) {
+            try {
+                val parser = SimpleDateFormat(pattern, Locale.US)
+                parser.timeZone = TimeZone.getTimeZone("UTC")
+                val parsed = parser.parse(isoStr)
+                if (parsed != null) return parsed
+            } catch (_: Exception) { }
+        }
+        return null
+    }
+
+    private fun formatToLocalIso(date: Date, targetTz: TimeZone): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
+        sdf.timeZone = targetTz
+        return sdf.format(date)
+    }
+
     // --- Tomorrow.io Mapping ---
     private fun mapTomorrowToWeatherState(
         location: LocationItem,
@@ -419,6 +456,8 @@ class WeatherRepository(private val database: AetherDatabase) {
         val currentInterval = hourlyIntervals.firstOrNull() ?: dailyIntervals.firstOrNull()
         val curVals = currentInterval?.values
 
+        val targetTz = resolveLocationTimeZone(location)
+
         val temp = curVals?.temperature ?: 25.0
         val feelsLike = curVals?.temperatureApparent ?: temp
         val humidity = (curVals?.humidity ?: 60.0).toInt()
@@ -427,15 +466,20 @@ class WeatherRepository(private val database: AetherDatabase) {
         val visibility = curVals?.visibility?.let { it * 1000.0 } // Tomorrow.io returns km -> meters
         val code = curVals?.weatherCode ?: 1000
 
-        // Determine if day or night from current interval start time
-        val isoParser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US)
-        val currentHour = try {
-            val d = isoParser.parse(curVals?.sunriseTime ?: currentInterval?.startTime?.take(16) ?: "")
-            val cal = Calendar.getInstance()
-            if (d != null) cal.time = d
-            cal.get(Calendar.HOUR_OF_DAY)
-        } catch (_: Exception) { 12 }
-        val isDay = currentHour in 6..18
+        // Parse sunrise and sunset for today from daily timeline or current interval values
+        val todayDaily = dailyIntervals.firstOrNull()?.values
+        val todaySunriseUtc = parseTomorrowUtcIso(todayDaily?.sunriseTime ?: curVals?.sunriseTime)
+        val todaySunsetUtc = parseTomorrowUtcIso(todayDaily?.sunsetTime ?: curVals?.sunsetTime)
+
+        // Robust Day/Night detection using local time & today's sunrise/sunset
+        val nowMillis = System.currentTimeMillis()
+        val isDay = if (todaySunriseUtc != null && todaySunsetUtc != null) {
+            nowMillis in todaySunriseUtc.time until todaySunsetUtc.time
+        } else {
+            val cal = Calendar.getInstance(targetTz)
+            val localHour = cal.get(Calendar.HOUR_OF_DAY)
+            localHour in 6..18
+        }
 
         val condition = WeatherCondition.fromTomorrowCode(code, isDay = isDay, windSpeed = wind)
 
@@ -450,26 +494,34 @@ class WeatherRepository(private val database: AetherDatabase) {
             precipitationMm = precip
         )
 
-        // Hourly
+        // Hourly: accurately convert UTC intervals into target location's local time
         val hourlyList = mutableListOf<HourlyItem>()
         val displayHourFormat = SimpleDateFormat("h a", Locale.US)
+        displayHourFormat.timeZone = targetTz
+
         for (i in 0 until minOf(24, hourlyIntervals.size)) {
             val interval = hourlyIntervals[i]
             val v = interval.values ?: continue
             val startIso = interval.startTime ?: ""
-            val parsedDate = try { isoParser.parse(startIso.take(16)) } catch (_: Exception) { null }
-            val cal = Calendar.getInstance()
-            if (parsedDate != null) cal.time = parsedDate
-            val hour = cal.get(Calendar.HOUR_OF_DAY)
-            val hIsDay = hour in 6..18
+            val parsedUtcDate = parseTomorrowUtcIso(startIso)
+
+            val cal = Calendar.getInstance(targetTz)
+            if (parsedUtcDate != null) cal.time = parsedUtcDate
+            val localHour = cal.get(Calendar.HOUR_OF_DAY)
+            val hIsDay = localHour in 6..18
             val hCode = v.weatherCode ?: 1000
             val hCond = WeatherCondition.fromTomorrowCode(hCode, isDay = hIsDay, windSpeed = v.windSpeed ?: 0.0)
 
+            val localIsoTime = if (parsedUtcDate != null) formatToLocalIso(parsedUtcDate, targetTz) else startIso
+            val timeLabel = if (i == 0) "Now" else {
+                if (parsedUtcDate != null) displayHourFormat.format(parsedUtcDate) else "${localHour}:00"
+            }
+
             hourlyList.add(
                 HourlyItem(
-                    timeLabel = if (i == 0) "Now" else if (parsedDate != null) displayHourFormat.format(parsedDate) else "${hour}:00",
-                    rawIsoTime = startIso,
-                    hourOfDay = hour,
+                    timeLabel = timeLabel,
+                    rawIsoTime = localIsoTime,
+                    hourOfDay = localHour,
                     tempC = v.temperature ?: temp,
                     condition = hCond,
                     precipProb = (v.precipitationProbability ?: 0.0).toInt(),
@@ -478,28 +530,39 @@ class WeatherRepository(private val database: AetherDatabase) {
             )
         }
 
-        // Daily
+        // Daily: format labels and convert sunrise/sunset into local time strings
         val dailyList = mutableListOf<DailyItem>()
         val dayNameFormat = SimpleDateFormat("EEE", Locale.US)
+        dayNameFormat.timeZone = targetTz
+        val localDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        localDateFormat.timeZone = targetTz
+
         for (i in 0 until minOf(7, dailyIntervals.size)) {
             val interval = dailyIntervals[i]
             val v = interval.values ?: continue
             val startIso = interval.startTime ?: ""
-            val parsedDate = try { isoParser.parse(startIso.take(10)) } catch (_: Exception) { null }
+            val parsedUtcDate = parseTomorrowUtcIso(startIso)
+
+            val localDateStr = if (parsedUtcDate != null) localDateFormat.format(parsedUtcDate) else startIso.take(10)
             val dayLabel = if (i == 0) "Today" else if (i == 1) "Tomorrow" else {
-                if (parsedDate != null) dayNameFormat.format(parsedDate) else "Day $i"
+                if (parsedUtcDate != null) dayNameFormat.format(parsedUtcDate) else "Day $i"
             }
             val dCode = v.weatherCode ?: 1000
+
+            val sunriseDate = parseTomorrowUtcIso(v.sunriseTime)
+            val sunsetDate = parseTomorrowUtcIso(v.sunsetTime)
+            val localSunrise = sunriseDate?.let { formatToLocalIso(it, targetTz) }
+            val localSunset = sunsetDate?.let { formatToLocalIso(it, targetTz) }
 
             dailyList.add(
                 DailyItem(
                     dayLabel = dayLabel,
-                    dateStr = startIso.take(10),
+                    dateStr = localDateStr,
                     tempMaxC = v.temperatureMax ?: (v.temperature ?: temp),
                     tempMinC = v.temperatureMin ?: (v.temperature ?: (temp - 5.0)),
                     condition = WeatherCondition.fromTomorrowCode(dCode, isDay = true),
-                    sunrise = v.sunriseTime?.take(16),
-                    sunset = v.sunsetTime?.take(16)
+                    sunrise = localSunrise,
+                    sunset = localSunset
                 )
             )
         }
@@ -674,7 +737,7 @@ class WeatherRepository(private val database: AetherDatabase) {
     ): AqiData? {
         val isIndia = isIndianLocation(location.latitude, location.longitude, location.country, location.admin1)
 
-        // 1. High Priority: CPCB Ground Station Data via WAQI
+        // 1. High Priority: CPCB Ground Station Data via WAQI (Nearby stations only, within 120 km)
         if (isIndia && waqi?.status == "ok" && waqi.data?.aqi != null && waqi.data.aqi > 0) {
             val stationName = waqi.data.city?.name?.let { cleanStationName(it) }
             val stationGeo = waqi.data.city?.geo
@@ -682,21 +745,24 @@ class WeatherRepository(private val database: AetherDatabase) {
                 calculateDistanceKm(location.latitude, location.longitude, stationGeo[0], stationGeo[1])
             } else null
 
-            val stationAqi = waqi.data.aqi
-            val levelLabel = NaqiCalculator.getCategoryLabel(stationAqi)
+            // Reject distant foreign/out-of-state stations (e.g. Shanghai 3,420 km away)
+            if (distKm == null || distKm <= 120.0) {
+                val stationAqi = waqi.data.aqi
+                val levelLabel = NaqiCalculator.getCategoryLabel(stationAqi)
 
-            return AqiData(
-                isEuropeanStandard = false,
-                standardName = "NAQI",
-                currentValue = stationAqi,
-                levelLabel = levelLabel,
-                highestPast7Days = (stationAqi * 1.2).toInt().coerceAtMost(500),
-                lowestPast7Days = (stationAqi * 0.75).toInt().coerceAtLeast(10),
-                isNaqiStandard = true,
-                providerDescription = "CPCB Ground Station: ${stationName ?: "Official Monitoring"}",
-                stationName = stationName,
-                distanceKm = distKm
-            )
+                return AqiData(
+                    isEuropeanStandard = false,
+                    standardName = "NAQI",
+                    currentValue = stationAqi,
+                    levelLabel = levelLabel,
+                    highestPast7Days = (stationAqi * 1.2).toInt().coerceAtMost(500),
+                    lowestPast7Days = (stationAqi * 0.75).toInt().coerceAtLeast(10),
+                    isNaqiStandard = true,
+                    providerDescription = "CPCB Ground Station: ${stationName ?: "Official Monitoring"}",
+                    stationName = stationName,
+                    distanceKm = distKm
+                )
+            }
         }
 
         // 2. Calculated NAQI via surface particulate concentrations (PM2.5 / PM10)

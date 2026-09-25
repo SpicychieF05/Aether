@@ -35,7 +35,8 @@ class ExampleRobolectricTest {
     fun `location repository sets kolkata as default location`() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val database = AetherDatabase.getDatabase(context)
-        val locationRepo = DefaultLocationRepository(context, database)
+        val weatherRepo = WeatherRepository(database)
+        val locationRepo = DefaultLocationRepository(context, database, weatherRepo)
 
         val defaultLoc = locationRepo.getDefaultLocation()
         assertEquals("Kolkata", defaultLoc.name)

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.NearMe
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.WbSunny
@@ -46,6 +47,14 @@ fun StatChipsRow(
     modifier: Modifier = Modifier
 ) {
     val sunLabel = formatSunTime(todayForecast?.sunrise, todayForecast?.sunset, currentWeather.isDay)
+    val windSpeedLabel = WeatherFormatters.formatSpeed(currentWeather.windSpeedKmh, isFahrenheit)
+    val windSubtext = when {
+        currentWeather.windSpeedKmh < 5.0 -> "Calm"
+        currentWeather.windSpeedKmh < 20.0 -> "Gentle breeze"
+        currentWeather.windSpeedKmh < 38.0 -> "Moderate breeze"
+        currentWeather.windSpeedKmh < 50.0 -> "Strong wind"
+        else -> "Gale warning"
+    }
 
     val aqiLevelColor = when (aqiData?.levelLabel?.lowercase()) {
         "good" -> Color(0xFF81C784)
@@ -98,6 +107,15 @@ fun StatChipsRow(
                     modifier = Modifier.weight(1f)
                 )
 
+                StatChip(
+                    icon = Icons.Default.NearMe,
+                    iconTint = Color(0xFF80DEEA),
+                    title = "WIND",
+                    value = windSpeedLabel,
+                    subtext = windSubtext,
+                    modifier = Modifier.weight(1f)
+                )
+
                 if (aqiData != null) {
                     StatChip(
                         icon = Icons.Default.Air,
@@ -136,7 +154,7 @@ fun StatChipsRow(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Row 1: Humidity & AQI
+                // Row 1: Humidity & Wind Speed (Always present and high priority)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -150,6 +168,21 @@ fun StatChipsRow(
                         modifier = Modifier.weight(1f)
                     )
 
+                    StatChip(
+                        icon = Icons.Default.NearMe,
+                        iconTint = Color(0xFF80DEEA),
+                        title = "WIND",
+                        value = windSpeedLabel,
+                        subtext = windSubtext,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Row 2: Air Quality (if available) & Sun Event (or Visibility)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     if (aqiData != null) {
                         StatChip(
                             icon = Icons.Default.Air,
@@ -157,6 +190,14 @@ fun StatChipsRow(
                             title = aqiTitle,
                             value = "${aqiData.currentValue} • ${aqiData.levelLabel}",
                             subtext = aqiSubtext,
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatChip(
+                            icon = Icons.Default.WbSunny,
+                            iconTint = Color(0xFFFFB300),
+                            title = if (currentWeather.isDay) "SUNSET" else "SUNRISE",
+                            value = sunLabel,
+                            subtext = if (currentWeather.isDay) "Dusk approaching" else "Dawn approaching",
                             modifier = Modifier.weight(1f)
                         )
                     } else {
@@ -168,37 +209,36 @@ fun StatChipsRow(
                             subtext = if (currentWeather.isDay) "Dusk approaching" else "Dawn approaching",
                             modifier = Modifier.weight(1f)
                         )
+
+                        if (currentWeather.visibilityMeters != null) {
+                            StatChip(
+                                icon = Icons.Default.Visibility,
+                                iconTint = Color(0xFFB0BEC5),
+                                title = "VISIBILITY",
+                                value = WeatherFormatters.formatVisibility(currentWeather.visibilityMeters, isFahrenheit),
+                                subtext = if (currentWeather.isFoggy) "Foggy conditions" else "Clear visibility",
+                                modifier = Modifier.weight(1f)
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
 
-                // Row 2: Sun Event & (Optional) Visibility
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    if (aqiData != null) {
-                        StatChip(
-                            icon = Icons.Default.WbSunny,
-                            iconTint = Color(0xFFFFB300),
-                            title = if (currentWeather.isDay) "SUNSET" else "SUNRISE",
-                            value = sunLabel,
-                            subtext = if (currentWeather.isDay) "Dusk approaching" else "Dawn approaching",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    if (currentWeather.isFoggy) {
+                // Row 3: Visibility if both AQI and Fog are present
+                if (aqiData != null && currentWeather.isFoggy) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         StatChip(
                             icon = Icons.Default.Visibility,
                             iconTint = Color(0xFFB0BEC5),
                             title = "VISIBILITY",
                             value = WeatherFormatters.formatVisibility(currentWeather.visibilityMeters, isFahrenheit),
                             subtext = "Foggy conditions",
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         )
-                    } else if (aqiData == null) {
-                        // Empty spacer to keep balance if only 1 item in row 2
-                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }

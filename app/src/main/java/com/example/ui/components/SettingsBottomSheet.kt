@@ -99,6 +99,7 @@ fun SettingsBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
                 .imePadding()
                 .padding(horizontal = 24.dp, vertical = 12.dp)
@@ -473,7 +474,7 @@ fun SettingsBottomSheet(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "v1.1",
+                            text = "v${com.example.BuildConfig.VERSION_NAME}",
                             color = Color(0xFFFFD54F),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
@@ -542,7 +543,7 @@ fun SettingsBottomSheet(
                                     fontSize = 15.sp
                                 )
                                 Text(
-                                    text = "Current: v1.1.0",
+                                    text = "Current: v${com.example.BuildConfig.VERSION_NAME}",
                                     color = Color.White.copy(alpha = 0.55f),
                                     fontSize = 12.sp
                                 )
@@ -566,7 +567,7 @@ fun SettingsBottomSheet(
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Checking...", fontSize = 12.sp)
+                                Text("Searching...", fontSize = 12.sp)
                             } else {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
@@ -574,7 +575,7 @@ fun SettingsBottomSheet(
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Check Updates", fontSize = 12.sp)
+                                Text("Search for Updates", fontSize = 12.sp)
                             }
                         }
                     }
@@ -604,16 +605,38 @@ fun SettingsBottomSheet(
                         HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Text(
-                            text = "Release: ${updateInfo.releaseTitle}",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Update Available",
+                                    color = Color(0xFFFFD54F),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    text = updateInfo.latestVersion,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontSize = 12.sp
+                                )
+                            }
+
+                            if (updateInfo.releaseTitle.isNotBlank() && updateInfo.releaseTitle != updateInfo.latestVersion) {
+                                Text(
+                                    text = updateInfo.releaseTitle,
+                                    color = Color.White.copy(alpha = 0.6f),
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+
                         if (updateInfo.releaseNotes.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = updateInfo.releaseNotes.take(160) + if (updateInfo.releaseNotes.length > 160) "..." else "",
+                                text = updateInfo.releaseNotes.take(180) + if (updateInfo.releaseNotes.length > 180) "..." else "",
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontSize = 11.sp,
                                 lineHeight = 15.sp
@@ -627,18 +650,26 @@ fun SettingsBottomSheet(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF81C784),
-                                contentColor = Color(0xFF1B5E20)
+                                containerColor = if (updateState.installReadyUri != null) Color(0xFF81C784) else Color(0xFF64B5F6),
+                                contentColor = if (updateState.installReadyUri != null) Color(0xFF1B5E20) else Color(0xFF0D47A1)
                             )
                         ) {
                             if (updateState.isDownloading) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),
-                                    color = Color(0xFF1B5E20),
+                                    color = Color(0xFF0D47A1),
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Downloading & Preparing APK...", fontWeight = FontWeight.Bold)
+                                Text("Downloading Update...", fontWeight = FontWeight.Bold)
+                            } else if (updateState.installReadyUri != null) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Install ${updateInfo.latestVersion}", fontWeight = FontWeight.Bold)
                             } else {
                                 Icon(
                                     imageVector = Icons.Default.Download,
@@ -646,7 +677,7 @@ fun SettingsBottomSheet(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Install ${updateInfo.latestVersion}", fontWeight = FontWeight.Bold)
+                                Text("Update to ${updateInfo.latestVersion}", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
