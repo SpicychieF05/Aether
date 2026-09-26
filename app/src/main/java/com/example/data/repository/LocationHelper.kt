@@ -122,15 +122,24 @@ class LocationHelper(private val context: Context) {
     @SuppressLint("MissingPermission")
     suspend fun getCurrentLocation(): LocationItem? = withContext(Dispatchers.IO) {
         try {
-            val cts = CancellationTokenSource()
-            val location = suspendCancellableCoroutine<android.location.Location?> { cont ->
-                fusedLocationClient.getCurrentLocation(
-                    Priority.PRIORITY_BALANCED_POWER_ACCURACY,
-                    cts.token
-                ).addOnSuccessListener { loc ->
-                    cont.resume(loc)
-                }.addOnFailureListener {
-                    cont.resume(null)
+            // First try fast lastLocation cache for instantaneous startup
+            val cachedLocation = suspendCancellableCoroutine<android.location.Location?> { cont ->
+                fusedLocationClient.lastLocation
+                    .addOnSuccessListener { loc -> cont.resume(loc) }
+                    .addOnFailureListener { cont.resume(null) }
+            }
+
+            val location = cachedLocation ?: run {
+                val cts = CancellationTokenSource()
+                suspendCancellableCoroutine<android.location.Location?> { cont ->
+                    fusedLocationClient.getCurrentLocation(
+                        Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                        cts.token
+                    ).addOnSuccessListener { loc ->
+                        cont.resume(loc)
+                    }.addOnFailureListener {
+                        cont.resume(null)
+                    }
                 }
             } ?: return@withContext null
 

@@ -268,7 +268,7 @@ fun LocationBottomSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "RECENT SEARCHES (LAST 3)",
+                            text = "RECENT SEARCHES",
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
@@ -283,8 +283,11 @@ fun LocationBottomSheet(
                         }
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        recentSearches.forEach { rec ->
+                    Column(
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        recentSearches.take(3).forEach { rec ->
                             val locItem = mapHistoryToItem(rec)
                             Row(
                                 modifier = Modifier
@@ -317,75 +320,6 @@ fun LocationBottomSheet(
                                         color = Color.White.copy(alpha = 0.6f),
                                         fontSize = 13.sp
                                     )
-                                }
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(18.dp))
-                }
-
-                // "ELSEWHERE" CURATED DESTINATIONS
-                Text(
-                    text = "ELSEWHERE",
-                    color = Color.White.copy(alpha = 0.6f),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.5.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LazyRow(
-                    contentPadding = PaddingValues(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(LocationHelper.CURATED_DESTINATIONS) { curLoc ->
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color.White.copy(alpha = 0.08f))
-                                .clickable {
-                                    onLocationSelected(curLoc)
-                                    onDismiss()
-                                }
-                                .padding(horizontal = 14.dp, vertical = 10.dp)
-                        ) {
-                            Column {
-                                Text(
-                                    text = curLoc.name,
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    val destinationSubtitle = curLoc.country ?: curLoc.admin1 ?: ""
-                                    if (destinationSubtitle.isNotEmpty()) {
-                                        Text(
-                                            text = destinationSubtitle,
-                                            color = Color.White.copy(alpha = 0.65f),
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Normal
-                                        )
-                                    }
-                                    val isCurIndia = curLoc.country?.equals("India", ignoreCase = true) == true ||
-                                            (curLoc.latitude in 6.0..37.6 && curLoc.longitude in 68.0..97.6)
-                                    if (isCurIndia) {
-                                        if (destinationSubtitle.isNotEmpty()) {
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                            Text(
-                                                text = "•",
-                                                color = Color.White.copy(alpha = 0.4f),
-                                                fontSize = 10.sp
-                                            )
-                                            Spacer(modifier = Modifier.width(4.dp))
-                                        }
-                                        Text(
-                                            text = "NAQI",
-                                            color = Color(0xFFAED581),
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
                                 }
                             }
                         }

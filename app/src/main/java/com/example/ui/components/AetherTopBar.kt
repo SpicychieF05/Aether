@@ -46,7 +46,7 @@ fun AetherTopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -57,55 +57,61 @@ fun AetherTopBar(
             fontSize = 22.sp,
             fontWeight = FontWeight.Light,
             fontFamily = FontFamily.Serif,
-            letterSpacing = 2.5.sp,
-            modifier = Modifier.padding(end = 8.dp)
+            letterSpacing = 2.sp,
+            modifier = Modifier.padding(end = 4.dp)
         )
 
-        // Unified Weather Search Pill (Option 1: Combines location display and search action)
+        // Expanded Weather Search Pill (fills available center space as shown in image.png red box)
         Box(
             modifier = Modifier
-                .weight(1f, fill = false)
-                .widthIn(max = 320.dp)
+                .weight(1f)
+                .padding(horizontal = 10.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color.White.copy(alpha = 0.16f))
+                .background(Color.White.copy(alpha = 0.14f))
                 .clickable(onClick = onLocationClick)
-                .padding(horizontal = 12.dp, vertical = 7.dp)
+                .padding(horizontal = 14.dp, vertical = 9.dp)
                 .testTag("location_selector_pill")
         ) {
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Leading icon: GPS arrow if current GPS, or Search magnifying glass
-                if (location?.isGps == true) {
-                    Icon(
-                        imageVector = Icons.Default.NearMe,
-                        contentDescription = "GPS Location",
-                        tint = Color(0xFF81D4FA),
-                        modifier = Modifier.size(14.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    // Leading icon: GPS arrow if current GPS, or Search magnifying glass
+                    if (location?.isGps == true) {
+                        Icon(
+                            imageVector = Icons.Default.NearMe,
+                            contentDescription = "GPS Location",
+                            tint = Color(0xFF81D4FA),
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search Location",
+                            tint = Color.White.copy(alpha = 0.75f),
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    // City Name
+                    Text(
+                        text = location?.name ?: "Search location...",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search Location",
-                        tint = Color.White.copy(alpha = 0.75f),
-                        modifier = Modifier.size(15.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
                 }
 
-                // City Name
-                Text(
-                    text = location?.name ?: "Search location",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(6.dp))
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Change Location",
@@ -115,17 +121,18 @@ fun AetherTopBar(
             }
         }
 
-        // Settings Button
+        // Settings Button with clean touch target and balanced spacing
         IconButton(
             onClick = onSettingsClick,
             modifier = Modifier
-                .size(44.dp)
+                .size(40.dp)
                 .testTag("settings_button")
         ) {
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
-                tint = Color.White.copy(alpha = 0.9f)
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(22.dp)
             )
         }
     }

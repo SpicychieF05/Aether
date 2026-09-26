@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -24,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -95,49 +97,70 @@ fun CurrentWeatherCard(
                 }
             }
         } else {
-            // Location Local Time badge
+            // Location Local Time badge: Clean design signature, only the time is shown
             Box(
                 modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.12f))
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.08f))
+                    .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AccessTime,
-                        contentDescription = null,
-                        tint = Color(0xFFFFD54F),
-                        modifier = Modifier.size(13.dp)
+                Text(
+                    text = localTimeStr,
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 0.6.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Main Large Temperature with symmetric degree spacing for pixel-perfect X-axis centering
+        val tempFormatted = WeatherFormatters.formatTemp(displayedTemp, isFahrenheit)
+        val tempDigits = tempFormatted.removeSuffix("°")
+        val hasDegree = tempFormatted.endsWith("°")
+
+        Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (hasDegree) {
+                Spacer(modifier = Modifier.width(20.dp))
+            }
+
+            Text(
+                text = tempDigits,
+                color = Color.White,
+                fontSize = 82.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = (-2).sp,
+                textAlign = TextAlign.Center,
+                style = TextStyle(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
+            )
+
+            if (hasDegree) {
+                Text(
+                    text = "°",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Light,
+                    modifier = Modifier
+                        .width(20.dp)
+                        .padding(top = 4.dp),
+                    style = TextStyle(
+                        platformStyle = PlatformTextStyle(includeFontPadding = false)
                     )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = "$localTimeStr local time",
-                        color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Main Large Temperature
-        Text(
-            text = WeatherFormatters.formatTemp(displayedTemp, isFahrenheit),
-            color = Color.White,
-            fontSize = 78.sp,
-            fontWeight = FontWeight.Light,
-            letterSpacing = (-1.5).sp,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        // Condition Title & Icon - perfectly centered
+        // Condition Title & Icon - symmetric balancing so the condition text & digits align on both X & Y axes
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
@@ -146,7 +169,7 @@ fun CurrentWeatherCard(
                 imageVector = displayedCondition.getIcon(),
                 contentDescription = displayedCondition.displayName,
                 tint = Color(0xFFFFD54F),
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -154,8 +177,13 @@ fun CurrentWeatherCard(
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                style = TextStyle(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
             )
+            // Symmetric 22dp spacer on the right balances the 22dp icon on the left for exact vertical axis alignment
+            Spacer(modifier = Modifier.width(22.dp))
         }
 
         Spacer(modifier = Modifier.height(6.dp))

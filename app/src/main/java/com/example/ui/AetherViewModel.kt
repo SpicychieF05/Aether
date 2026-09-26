@@ -100,8 +100,8 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
 
-        // Set Kolkata as default for everyone on first launch via LocationRepository
-        loadWeather(locationRepository.getDefaultLocation())
+        // Trigger GPS locator to show the forecast for the user's own location on startup
+        requestGpsLocation()
 
         // Automatic background check for updates on startup
         checkForAppUpdates(isManual = false)
@@ -315,20 +315,61 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
 
     fun requestGpsLocation() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isLoading = it.weatherState == null) }
             val gpsLoc = locationRepository.getCurrentLocation()
             if (gpsLoc != null) {
                 selectLocation(gpsLoc)
             } else {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = if (!locationRepository.isLocationPermissionGranted()) {
-                            "Location permission needed for GPS location"
-                        } else {
-                            "Current GPS location unavailable"
+                if (_uiState.value.weatherState == null) {
+                    val savedHome = _uiState.value.savedLocations.find { it.slot == "HOME" }
+                    val lastSearch = _uiState.value.recentSearches.firstOrNull()
+                    if (savedHome != null) {
+                        val terrain = try {
+                            com.example.data.model.TerrainCategory.valueOf(savedHome.terrainCategory)
+                        } catch (_: Exception) {
+                            com.example.data.model.TerrainCategory.CITY_SKYLINE
                         }
-                    )
+                        loadWeather(
+                            LocationItem(
+                                name = savedHome.name,
+                                latitude = savedHome.latitude,
+                                longitude = savedHome.longitude,
+                                admin1 = savedHome.admin1,
+                                country = savedHome.country,
+                                terrainCategory = terrain
+                            )
+                        )
+                    } else if (lastSearch != null) {
+                        val terrain = try {
+                            com.example.data.model.TerrainCategory.valueOf(lastSearch.terrainCategory)
+                        } catch (_: Exception) {
+                            com.example.data.model.TerrainCategory.CITY_SKYLINE
+                        }
+                        loadWeather(
+                            LocationItem(
+                                id = lastSearch.id,
+                                name = lastSearch.name,
+                                latitude = lastSearch.latitude,
+                                longitude = lastSearch.longitude,
+                                admin1 = lastSearch.admin1,
+                                country = lastSearch.country,
+                                terrainCategory = terrain
+                            )
+                        )
+                    } else {
+                        loadWeather(locationRepository.getDefaultLocation())
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = if (!locationRepository.isLocationPermissionGranted()) {
+                                "Location permission needed for GPS location"
+                            } else {
+                                "Current GPS location unavailable"
+                            }
+                        )
+                    }
                 }
             }
         }
