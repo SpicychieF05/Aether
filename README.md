@@ -6,9 +6,9 @@ A minimalist weather application for Android built with Jetpack Compose, Kotlin 
 
 ## 📑 Table of Contents
 1. [Overview & Highlights](#-overview--highlights)
-2. [Latest Release: v1.2.0](#-latest-release-v120)
+2. [Latest Release: v1.2.2](#-latest-release-v122)
 3. [Download & Installation](#-download--installation)
-4. [Google Play Protect Troubleshooting & FAQ](#-google-play-protect-troubleshooting--faq)
+4. [Google Play Protect Troubleshooting & FAQ](#-google-play-protect-troubleshooting-faq)
 5. [Key Features](#-key-features)
 6. [Weather Data & AQI Providers](#-weather-data--aqi-providers)
 7. [Architecture & Tech Stack](#-architecture--tech-stack)
@@ -28,16 +28,15 @@ A minimalist weather application for Android built with Jetpack Compose, Kotlin 
 
 ---
 
-## 🚀 Latest Release: v1.2.0
+## 🚀 Latest Release: v1.2.2
 
 ### **Release Title:**
-**`v1.2.0 — Enhanced Scrubber Haptics, In-App Privacy Policy & Update Polish`**
+**`v1.2.2 — GPS Startup, UI Alignment & Search Drawer Refinements`**
 
 ### **What's New in v1.2.0:**
-* 🎯 **Universal Timeline Scrubber Haptics**: Completely overhauled the timeline scrubber vibration engine. Added Compose-level tactile clicks combined with an adaptive `EFFECT_CLICK` + hardware pulse fallback that works seamlessly across all Android OEMs (Samsung, Xiaomi, Pixel, OnePlus, Motorola).
-* 🛡️ **In-App Privacy Policy Dialog**: Added a dedicated Privacy Policy section in Settings detailing our zero-tracking, ephemeral location policy and local-only Room database architecture.
-* 📦 **In-App Self-Update Engine**: Integrated background GitHub release checks, notification shade alerts for new versions, and in-app `DownloadManager` package installer integration.
-* ⚡ **Performance & Build Upgrades**: Bumped version code to 3 (v1.2.0) targeting Android 16 (API 36).
+- **GPS on App Start**: Removed Kolkata as the default location. The app now triggers the GPS locator on launch to fetch and display the forecast for your current location immediately.
+- **Fast-Path Cached Location**: Integrated `fusedLocationClient.lastLocation` to provide instant weather loading without waiting for a new satellite fix.
+- **Graceful Fallbacks**: If location access is resolving or disabled, the app smoothly falls back to your saved Home or most recent search.
 
 ---
 
@@ -47,7 +46,7 @@ Download the latest release APK directly from GitHub:
 👉 **[Download Latest APK](https://github.com/SpicychieF05/Aether/releases/latest)**
 
 ### How to Install:
-1. Download `Aether-v1.2.0.apk` from the [Releases page](https://github.com/SpicychieF05/Aether/releases/latest).
+1. Download `Aether-v1.2.2.apk` from the [Releases page](https://github.com/SpicychieF05/Aether/releases/latest).
 2. Tap the downloaded `.apk` file.
 3. If prompted by Android, toggle **"Allow from this source"** / **"Install unknown apps"** for your browser or file manager.
 4. Tap **Install**.
