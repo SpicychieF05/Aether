@@ -49,6 +49,15 @@ object UpdateManager {
     private var isReceiverRegistered = false
 
     /**
+     * Extracts pure numeric semantic version (e.g. "1.2.1" from "v1.2.1" or "Release v1.2.1-beta")
+     */
+    fun extractSemVer(raw: String): String {
+        if (raw.isBlank()) return ""
+        val match = Regex("""\d+(\.\d+)+""").find(raw)
+        return match?.value ?: raw.filter { it.isDigit() || it == '.' }
+    }
+
+    /**
      * Queries the GitHub Releases API and compares the latest release tag with the installed version.
      */
     suspend fun checkLatestRelease(currentVersionName: String): Result<AppUpdateInfo> = withContext(Dispatchers.IO) {
@@ -93,10 +102,11 @@ object UpdateManager {
                 }
             }
 
-            val remoteCleanVersion = tagName.removePrefix("v").trim()
-            val currentCleanVersion = currentVersionName.removePrefix("v").trim()
+            val remoteSemVer = extractSemVer(tagName)
+            val currentSemVer = extractSemVer(currentVersionName)
 
-            val hasUpdate = isNewerVersion(remoteCleanVersion, currentCleanVersion) && apkUrl.isNotEmpty()
+            // Strict check: Only prompt if remote version is strictly newer than current version
+            val hasUpdate = isNewerVersion(remoteSemVer, currentSemVer) && apkUrl.isNotEmpty()
 
             Result.success(
                 AppUpdateInfo(
@@ -117,11 +127,12 @@ object UpdateManager {
     }
 
     /**
-     * Semantic version comparison (e.g., 1.2.0 > 1.1.0)
+     * Semantic version comparison (e.g., 1.2.1 > 1.2.0 -> true; 1.2.1 == 1.2.1 -> false)
      */
     fun isNewerVersion(remote: String, current: String): Boolean {
         if (remote.isBlank()) return false
         if (current.isBlank()) return true
+        if (remote == current) return false
 
         val remoteParts = remote.split(".").mapNotNull { it.takeWhile { ch -> ch.isDigit() }.toIntOrNull() }
         val currentParts = current.split(".").mapNotNull { it.takeWhile { ch -> ch.isDigit() }.toIntOrNull() }
@@ -180,6 +191,27 @@ object UpdateManager {
     }
 
     /**
+     * Checks if a previously downloaded valid APK already exists in the app cache/downloads folder.
+     */
+    fun getExistingDownloadedApkUri(context: Context, fileName: String): Uri? {
+        return try {
+            val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
+            if (file.exists() && file.length() > 500_000) { // Valid APK size
+                FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    file
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get existing APK Uri", e)
+            null
+        }
+    }
+
+    /**
      * Starts the APK download via Android's DownloadManager and registers receiver for completion.
      */
     fun startDownload(
@@ -189,6 +221,16 @@ object UpdateManager {
         onDownloadStarted: (Long) -> Unit,
         onInstallReady: (Uri) -> Unit
     ) {
+        try {
+            // Delete any existing older downloaded file with the same name to avoid DownloadManager renaming
+            val existingFile = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
+            if (existingFile.exists()) {
+                existingFile.delete()
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not delete old download file", e)
+        }
+
         val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val request = DownloadManager.Request(Uri.parse(apkUrl)).apply {
             setTitle("Downloading Aether Update")
@@ -240,13 +282,45 @@ object UpdateManager {
 
     /**
      * Launches the Android Package Installer using the secure FileProvider content Uri.
+     * On Android 8.0+ (Oreo+), verifies permission to install unknown apps first.
      */
     fun promptInstall(context: Context, contentUri: Uri) {
-        val installIntent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(contentUri, "application/vnd.android.package-archive")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            // Check for Unknown App Sources permission on Android 8.0+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    val manageIntent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(manageIntent)
+                    return
+                }
+            }
+
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(contentUri, "application/vnd.android.package-archive")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            }
+            context.startActivity(installIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to launch package installer", e)
         }
-        context.startActivity(installIntent)
+    }
+
+    /**
+     * Opens the direct APK or GitHub Release page in browser as a 100% reliable fallback.
+     */
+    fun openInBrowser(context: Context, url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open browser", e)
+        }
     }
 }

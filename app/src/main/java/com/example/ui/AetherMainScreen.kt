@@ -86,9 +86,10 @@ fun AetherMainScreen(
     val locationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // Trigger update popup if background check found an update
+    // Trigger update popup if background check found an update and user hasn't dismissed it
     LaunchedEffect(updateState.updateInfo) {
-        if (updateState.updateInfo?.hasUpdate == true) {
+        val info = updateState.updateInfo
+        if (info?.hasUpdate == true && !viewModel.isUpdateDismissed(info.latestVersion)) {
             showUpdateNotificationDialog = true
         }
     }
@@ -299,7 +300,10 @@ fun AetherMainScreen(
             val updateInfo = updateState.updateInfo!!
             AlertDialog(
                 onDismissRequest = {
-                    if (!updateState.isDownloading) showUpdateNotificationDialog = false
+                    if (!updateState.isDownloading) {
+                        viewModel.dismissUpdateDialog(updateInfo.latestVersion)
+                        showUpdateNotificationDialog = false
+                    }
                 },
                 title = {
                     Text(
@@ -327,7 +331,13 @@ fun AetherMainScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (updateState.isDownloading) "Downloading update in background..." else "Tap Update to download directly from GitHub Releases.",
+                            text = if (updateState.installReadyUri != null) {
+                                "APK is ready to install! Tap Install below to update."
+                            } else if (updateState.isDownloading) {
+                                "Downloading update in background..."
+                            } else {
+                                "Tap Update to download and install, or open GitHub in your browser."
+                            },
                             color = Color.White.copy(alpha = 0.6f),
                             fontSize = 12.sp
                         )
@@ -336,21 +346,38 @@ fun AetherMainScreen(
                 confirmButton = {
                     Button(
                         onClick = {
-                            viewModel.startApkDownload(context, updateInfo)
+                            if (updateState.installReadyUri != null) {
+                                viewModel.installDownloadedApk(context)
+                            } else {
+                                viewModel.startApkDownload(context, updateInfo)
+                            }
                             showUpdateNotificationDialog = false
                         },
                         enabled = !updateState.isDownloading,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF64B5F6),
-                            contentColor = Color(0xFF0D47A1)
+                            containerColor = if (updateState.installReadyUri != null) Color(0xFF81C784) else Color(0xFF64B5F6),
+                            contentColor = if (updateState.installReadyUri != null) Color(0xFF1B5E20) else Color(0xFF0D47A1)
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text(if (updateState.isDownloading) "Downloading..." else "Update", fontWeight = FontWeight.Bold)
+                        Text(
+                            text = if (updateState.isDownloading) "Downloading..." else if (updateState.installReadyUri != null) "Install Now" else "Update",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 },
                 dismissButton = {
                     androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(
+                            onClick = {
+                                com.example.data.update.UpdateManager.openInBrowser(
+                                    context,
+                                    if (updateInfo.apkDownloadUrl.isNotBlank()) updateInfo.apkDownloadUrl else updateInfo.htmlUrl
+                                )
+                            }
+                        ) {
+                            Text("Browser", color = Color(0xFF81D4FA))
+                        }
                         TextButton(
                             onClick = {
                                 showUpdateNotificationDialog = false
@@ -360,7 +387,10 @@ fun AetherMainScreen(
                             Text("Settings", color = Color.White.copy(alpha = 0.7f))
                         }
                         TextButton(
-                            onClick = { showUpdateNotificationDialog = false },
+                            onClick = {
+                                viewModel.dismissUpdateDialog(updateInfo.latestVersion)
+                                showUpdateNotificationDialog = false
+                            },
                             enabled = !updateState.isDownloading
                         ) {
                             Text("Later", color = Color.White.copy(alpha = 0.6f))
@@ -611,7 +641,8 @@ private fun MultiPaneAdaptiveLayout(
                 HourlyTemperatureTrendCard(
                     hourlyList = weather.hourly,
                     isFahrenheit = uiState.isFahrenheit,
-                    selectedIndex = uiState.scrubbedHourIndex
+                    selectedIndex = uiState.scrubbedHourIndex,
+                    onHourSelected = { viewModel.setScrubbedHour(it) }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))

@@ -135,8 +135,9 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
                             } else null
                         )
                     }
-                    // Trigger Android system notification if a newer version is available
-                    if (info.hasUpdate) {
+                    // Trigger Android system notification if a newer version is available and not previously dismissed
+                    val dismissedVersion = prefs.getString("dismissed_update_version", null)
+                    if (info.hasUpdate && info.latestVersion != dismissedVersion) {
                         try {
                             com.example.data.update.UpdateManager.postUpdateNotification(getApplication(), info)
                         } catch (e: Exception) {
@@ -156,7 +157,25 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun dismissUpdateDialog(version: String) {
+        prefs.edit().putString("dismissed_update_version", version).apply()
+    }
+
+    fun isUpdateDismissed(version: String): Boolean {
+        return prefs.getString("dismissed_update_version", null) == version
+    }
+
     fun startApkDownload(context: Context, info: com.example.data.update.AppUpdateInfo) {
+        // If the APK was already downloaded and is ready, directly prompt installation
+        val existingUri = _updateState.value.installReadyUri 
+            ?: com.example.data.update.UpdateManager.getExistingDownloadedApkUri(context, info.apkFileName)
+            
+        if (existingUri != null) {
+            _updateState.update { it.copy(isDownloading = false, installReadyUri = existingUri, checkMessage = "Ready to install.") }
+            com.example.data.update.UpdateManager.promptInstall(context, existingUri)
+            return
+        }
+
         _updateState.update { it.copy(isDownloading = true, checkMessage = "Downloading ${info.apkFileName}...") }
         com.example.data.update.UpdateManager.startDownload(
             context = context,
@@ -175,6 +194,13 @@ class AetherViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
         )
+    }
+
+    fun installDownloadedApk(context: Context) {
+        val uri = _updateState.value.installReadyUri
+        if (uri != null) {
+            com.example.data.update.UpdateManager.promptInstall(context, uri)
+        }
     }
 
     fun clearUpdateFeedbackMessage() {

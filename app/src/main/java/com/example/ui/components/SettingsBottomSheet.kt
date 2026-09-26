@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -109,6 +110,8 @@ fun SettingsBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .widthIn(max = 640.dp)
+                .align(Alignment.CenterHorizontally)
                 .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
                 .imePadding()
@@ -772,7 +775,13 @@ fun SettingsBottomSheet(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         Button(
-                            onClick = { onInstallUpdate(updateInfo) },
+                            onClick = {
+                                if (updateState.installReadyUri != null) {
+                                    com.example.data.update.UpdateManager.promptInstall(context, updateState.installReadyUri)
+                                } else {
+                                    onInstallUpdate(updateInfo)
+                                }
+                            },
                             enabled = !updateState.isDownloading,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
@@ -806,6 +815,26 @@ fun SettingsBottomSheet(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Update to ${updateInfo.latestVersion}", fontWeight = FontWeight.Bold)
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        androidx.compose.material3.TextButton(
+                            onClick = {
+                                com.example.data.update.UpdateManager.openInBrowser(
+                                    context,
+                                    if (updateInfo.apkDownloadUrl.isNotBlank()) updateInfo.apkDownloadUrl else updateInfo.htmlUrl
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = null,
+                                tint = Color(0xFF81D4FA),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Download APK directly in browser", color = Color(0xFF81D4FA), fontSize = 12.sp)
                         }
                     }
                 }

@@ -71,7 +71,7 @@ data class SampledHourPoint(
  * - Crisp horizontal baseline with upward tick marks
  * - Uniform time labels (11 PM, 2 AM, 5 AM, etc.)
  * - Interactive touch scrubbing synced with Aether's 24-hour diorama and tactile haptics
- * - Dual metric toggle: Precipitation Chance (%) vs Volume (mm/in)
+ * - Clean precipitation percentage row (💧 %) with rain intensity highlights
  */
 @Composable
 fun HourlyTemperatureTrendCard(
@@ -119,9 +119,6 @@ fun HourlyTemperatureTrendCard(
     val minTempFormatted = WeatherFormatters.formatTemp(minTemp, isFahrenheit)
     val maxTempFormatted = WeatherFormatters.formatTemp(maxTemp, isFahrenheit)
 
-    // Metric toggle state: Precipitation Probability (%) vs Volume (mm/in)
-    var showVolumeMetric by remember { mutableStateOf(false) }
-
     val textMeasurer = rememberTextMeasurer()
 
     Box(
@@ -134,7 +131,7 @@ fun HourlyTemperatureTrendCard(
             .padding(16.dp)
     ) {
         Column {
-            // Header Row
+            // Header Row: Title & Low/High Temperature Summary
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -165,58 +162,28 @@ fun HourlyTemperatureTrendCard(
                     )
                 }
 
-                // Dual Metric Toggle Pill (% Chance vs Volume)
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.08f))
-                        .clickable { showVolumeMetric = !showVolumeMetric }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center
+                // Summary: Low & High
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.WaterDrop,
-                            contentDescription = null,
-                            tint = Color(0xFF29B6F6),
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (showVolumeMetric) if (isFahrenheit) "in" else "mm" else "% Chance",
-                            color = Color(0xFF81D4FA),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Text(
+                        text = "Low: $minTempFormatted",
+                        color = Color(0xFF81D4FA),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "  •  ",
+                        color = Color.White.copy(alpha = 0.3f),
+                        fontSize = 11.sp
+                    )
+                    Text(
+                        text = "High: $maxTempFormatted",
+                        color = Color(0xFFFFD54F),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Sub-header summary (Low / High)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Low: $minTempFormatted",
-                    color = Color(0xFF81D4FA),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Text(
-                    text = "  •  ",
-                    color = Color.White.copy(alpha = 0.3f),
-                    fontSize = 11.sp
-                )
-                Text(
-                    text = "High: $maxTempFormatted",
-                    color = Color(0xFFFFD54F),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -509,17 +476,7 @@ fun HourlyTemperatureTrendCard(
                     val prob = item.precipProb
                     val isHeavyRain = prob >= 50 || item.condition.isRain
                     val rainColor = if (isHeavyRain) Color(0xFF00E5FF) else Color(0xFF29B6F6)
-
-                    val rainText = if (showVolumeMetric) {
-                        val estVolume = (prob / 100.0) * (if (item.condition.rainIntensity > 0f) item.condition.rainIntensity * 6.0 else 2.5)
-                        if (isFahrenheit) {
-                            String.format(Locale.US, "%.1f in", estVolume * 0.0393701)
-                        } else {
-                            String.format(Locale.US, "%.1f mm", estVolume)
-                        }
-                    } else {
-                        "$prob%"
-                    }
+                    val rainText = "$prob%"
 
                     val rainMeasured = textMeasurer.measure(
                         text = rainText,
